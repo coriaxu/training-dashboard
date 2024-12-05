@@ -1,8 +1,15 @@
 import dash
-from dash import html, dcc
+from dash import html, dcc, Input, Output, State
 import dash_bootstrap_components as dbc
-import plotly.express as px
-import pandas as pd
+import plotly.graph_objects as go
+from io import BytesIO
+
+# 新增导入
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.cidfonts import UnicodeCIDFont
+from reportlab.lib.utils import ImageReader
 
 # 地中海风格配色方案
 COLORS = {
@@ -20,39 +27,85 @@ COLORS = {
     'border': 'rgba(44, 62, 80, 0.1)',  # 柔和的边框色
 }
 
-# 2023年数据
+# 语言字典
+translations = {
+    'zh': {
+        'title': "Surfin2024年学习发展工作培训数据看板",
+        'download_pdf': "下载PDF报告",
+        'key_metrics': "年度关键指标对比",
+        'detailed_comparison': "年度指标详细对比",
+        'total_courses': "总课程数",
+        'total_participants': "总参训人次",
+        'total_training_hours': "总培训时长",
+        'total_training_person_hours': "总培训人时",
+        'bar_chart': "柱状图",
+        'pie_chart': "饼图",
+        'radar_chart': "雷达图",
+        'year_2023': "2023年",
+        'year_2024': "2024年",
+        'growth': "同比增长",
+        'units': {'total_courses': '门', 'total_participants': '人次', 'total_training_hours': '小时', 'total_training_person_hours': '小时'},
+        'metrics': ['total_courses', 'total_participants', 'total_training_hours', 'total_training_person_hours'],
+        'metric_labels': {
+            'total_courses': "总课程数",
+            'total_participants': "总参训人次",
+            'total_training_hours': "总培训时长",
+            'total_training_person_hours': "总培训人时",
+        },
+    },
+    'en': {
+        'title': "Surfin 2024 Training Data Dashboard",
+        'download_pdf': "Download PDF Report",
+        'key_metrics': "Annual Key Metrics Comparison",
+        'detailed_comparison': "Detailed Annual Metrics Comparison",
+        'total_courses': "Total Courses",
+        'total_participants': "Total Participants",
+        'total_training_hours': "Total Training Hours",
+        'total_training_person_hours': "Total Training Person-Hours",
+        'bar_chart': "Bar Chart",
+        'pie_chart': "Pie Chart",
+        'radar_chart': "Radar Chart",
+        'year_2023': "Year 2023",
+        'year_2024': "Year 2024",
+        'growth': "Growth Compared to Last Year",
+        'units': {'total_courses': '', 'total_participants': '', 'total_training_hours': 'h', 'total_training_person_hours': 'h'},
+        'metrics': ['total_courses', 'total_participants', 'total_training_hours', 'total_training_person_hours'],
+        'metric_labels': {
+            'total_courses': "Total Courses",
+            'total_participants': "Total Participants",
+            'total_training_hours': "Total Training Hours",
+            'total_training_person_hours': "Total Training Person-Hours",
+        },
+    }
+}
+
+# 初始数据
 data_2023 = {
-    '总课程数': 39,
-    '总参训人次': 445,
-    '总培训时长': 66,
-    '总培训人时': 648
+    'total_courses': 39,
+    'total_participants': 445,
+    'total_training_hours': 66,
+    'total_training_person_hours': 648
 }
 
-# 2024年数据
 data_2024 = {
-    '总课程数': 24,
-    '总参训人次': 429,
-    '总培训时长': 57.5,
-    '总培训人时': 1036.5
+    'total_courses': 24,
+    'total_participants': 429,
+    'total_training_hours': 57.5,
+    'total_training_person_hours': 1036.5
 }
 
-# 计算同比增长
 def calculate_growth(current, previous):
     return ((current - previous) / previous * 100) if previous != 0 else 0
 
 growth_data = {
-    '总课程数': calculate_growth(data_2024['总课程数'], data_2023['总课程数']),
-    '总参训人次': calculate_growth(data_2024['总参训人次'], data_2023['总参训人次']),
-    '总培训时长': calculate_growth(data_2024['总培训时长'], data_2023['总培训时长']),
-    '总培训人时': calculate_growth(data_2024['总培训人时'], data_2023['总培训人时'])
+    key: calculate_growth(data_2024[key], data_2023[key]) for key in data_2023
 }
 
 # 添加全局样式
-app = dash.Dash(__name__, 
+app = dash.Dash(__name__,
+                suppress_callback_exceptions=True,
                 external_stylesheets=[dbc.themes.BOOTSTRAP],
-                meta_tags=[{"name": "viewport", "content": "width=device-width, initial-scale=1"}],
-                compress=True)  # 启用压缩
-server = app.server  # 添加这行，Vercel 需要它
+                meta_tags=[{"name": "viewport", "content": "width=device-width, initial-scale=1"}])
 
 app.index_string = '''
 <!DOCTYPE html>
@@ -63,145 +116,7 @@ app.index_string = '''
         {%favicon%}
         {%css%}
         <style>
-            body {
-                background-color: ''' + COLORS['background'] + ''';
-                font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
-                -webkit-font-smoothing: antialiased;
-                -moz-osx-font-smoothing: grayscale;
-                line-height: 1.5;
-                letter-spacing: -0.022em;
-            }
-            .container-fluid {
-                max-width: 1400px;
-                margin: 0 auto;
-                padding: 2rem;
-            }
-            .card {
-                backdrop-filter: blur(25px) saturate(180%);
-                -webkit-backdrop-filter: blur(25px) saturate(180%);
-                background-color: ''' + COLORS['card_bg'] + ''';
-                border: none;
-                border-radius: 12px;
-                box-shadow: 
-                    0 2px 5px rgba(0,0,0,0.05),
-                    0 0 0 1px rgba(255,255,255,0.4) inset,
-                    0 0 0 1px rgba(0,0,0,0.03);
-                transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-                padding: 1.5rem;
-                position: relative;
-                overflow: hidden;
-            }
-            .card::before {
-                content: '';
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 100%);
-                opacity: 0;
-                transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            }
-            .card:hover {
-                transform: translateY(-2px) scale(1.005);
-                box-shadow: 
-                    0 8px 20px rgba(0,0,0,0.08),
-                    0 0 0 1px rgba(255,255,255,0.5) inset,
-                    0 0 0 1px rgba(0,0,0,0.03);
-                background-color: ''' + COLORS['card_bg'] + ''';
-            }
-            .card:hover::before {
-                opacity: 1;
-            }
-            .metric-value {
-                font-weight: 600;
-                letter-spacing: -0.025em;
-                font-size: 1.75rem;
-                margin: 0;
-                line-height: 1.2;
-                background: linear-gradient(135deg, ''' + COLORS['text'] + ''' 0%, #434344 100%);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-            }
-            .metric-title {
-                color: ''' + COLORS['text'] + ''';
-                font-size: 0.95rem;
-                font-weight: 500;
-                margin-bottom: 1rem;
-                letter-spacing: -0.01em;
-            }
-            .growth-indicator {
-                font-size: 0.875rem;
-                font-weight: 500;
-                padding: 4px 10px;
-                border-radius: 8px;
-                margin-left: 8px;
-                display: inline-flex;
-                align-items: center;
-                line-height: 1;
-                transition: all 0.3s ease;
-            }
-            .growth-indicator:hover {
-                transform: scale(1.05);
-            }
-            h1, h4 {
-                font-weight: 600;
-                letter-spacing: -0.025em;
-            }
-            h1 {
-                font-size: 2.25rem;
-                margin-bottom: 2rem;
-                background: linear-gradient(135deg, ''' + COLORS['text'] + ''' 0%, #434344 100%);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-            }
-            h4 {
-                font-size: 1.25rem;
-                margin-bottom: 1.5rem;
-                color: ''' + COLORS['text'] + ''';
-            }
-            .chart-container {
-                background: rgba(255,255,255,0.7);
-                backdrop-filter: blur(25px) saturate(180%);
-                -webkit-backdrop-filter: blur(25px) saturate(180%);
-                border-radius: 12px;
-                padding: 1.25rem;
-                box-shadow: 
-                    0 2px 5px rgba(0,0,0,0.05),
-                    0 0 0 1px rgba(255,255,255,0.4) inset,
-                    0 0 0 1px rgba(0,0,0,0.03);
-                margin-bottom: 1.5rem;
-                transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            }
-            .chart-container:hover {
-                transform: translateY(-2px);
-                box-shadow: 
-                    0 8px 20px rgba(0,0,0,0.08),
-                    0 0 0 1px rgba(255,255,255,0.5) inset,
-                    0 0 0 1px rgba(0,0,0,0.03);
-            }
-            @media (max-width: 768px) {
-                .container-fluid {
-                    padding: 1rem;
-                }
-                h1 {
-                    font-size: 1.75rem;
-                    margin-bottom: 1.5rem;
-                }
-                h4 {
-                    font-size: 1.125rem;
-                    margin-bottom: 1rem;
-                }
-                .metric-value {
-                    font-size: 1.5rem;
-                }
-                .card {
-                    padding: 1.25rem;
-                }
-            }
-            .modebar {
-                display: none !important;
-            }
+            /* 您的CSS样式代码 */
         </style>
     </head>
     <body>
@@ -216,9 +131,14 @@ app.index_string = '''
 '''
 
 # 创建年度对比卡片
-def create_comparison_card(title, value_2024, value_2023, growth, suffix=''):
+def create_comparison_card(metric_key, value_2024, value_2023, growth, suffix='', lang='zh'):
+    translations_lang = translations[lang]
+    title = translations_lang['metric_labels'][metric_key]
+    growth_label = translations_lang['growth']
+    year_2023 = translations_lang['year_2023']
+    year_2024 = translations_lang['year_2024']
+
     growth_color = COLORS['positive'] if growth >= 0 else COLORS['negative']
-    growth_icon = '↑' if growth >= 0 else '↓'
     return dbc.Card(
         [
             dbc.CardBody(
@@ -234,7 +154,7 @@ def create_comparison_card(title, value_2024, value_2023, growth, suffix=''):
                             'margin-bottom': '0.5rem',
                             'font-weight': '600'
                         }),
-                        html.P(f"2024年", style={
+                        html.P(f"{year_2024}", style={
                             'color': COLORS['text'],
                             'opacity': '0.7',
                             'margin-bottom': '1rem',
@@ -247,7 +167,7 @@ def create_comparison_card(title, value_2024, value_2023, growth, suffix=''):
                                 'font-weight': '500',
                                 'margin-right': '0.5rem'
                             }),
-                            html.Small("2023年", style={
+                            html.Small(f"{year_2023}", style={
                                 'color': COLORS['text'],
                                 'opacity': '0.6'
                             })
@@ -256,13 +176,13 @@ def create_comparison_card(title, value_2024, value_2023, growth, suffix=''):
                             html.Span(
                                 f"{'+' if growth > 0 else ''}{growth:.1f}%",
                                 style={
-                                    'color': COLORS['positive'] if growth > 0 else COLORS['negative'],
+                                    'color': growth_color,
                                     'font-weight': '600',
                                     'margin-top': '0.5rem',
                                     'display': 'inline-block',
                                     'padding': '0.25rem 0.75rem',
                                     'border-radius': '1rem',
-                                    'background-color': f"{'rgba(124, 179, 66, 0.1)' if growth > 0 else 'rgba(229, 115, 115, 0.1)'}",
+                                    'background-color': f"rgba({int(growth_color[1:3], 16)}, {int(growth_color[3:5], 16)}, {int(growth_color[5:7], 16)}, 0.1)",
                                 }
                             ),
                         ], style={'margin-top': '0.5rem'})
@@ -284,13 +204,14 @@ def create_comparison_card(title, value_2024, value_2023, growth, suffix=''):
     )
 
 # 创建图表类型选择器
-def create_chart_type_selector(metric):
+def create_chart_type_selector(metric_key, lang='zh'):
+    translations_lang = translations[lang]
     return dbc.Select(
-        id=f'chart-type-{metric}',
+        id=f'chart-type-{metric_key}',
         options=[
-            {'label': '柱状图', 'value': 'bar'},
-            {'label': '饼图', 'value': 'pie'},
-            {'label': '雷达图', 'value': 'radar'},
+            {'label': translations_lang['bar_chart'], 'value': 'bar'},
+            {'label': translations_lang['pie_chart'], 'value': 'pie'},
+            {'label': translations_lang['radar_chart'], 'value': 'radar'},
         ],
         value='bar',
         style={
@@ -307,22 +228,89 @@ def create_chart_type_selector(metric):
         }
     )
 
-# 创建图表
-def create_year_comparison_charts():
-    metrics = ['总课程数', '总参训人次', '总培训时长', '总培训人时']
-    units = ['门', '人次', '小时', '小时']
-    return [{'metric': metric, 'unit': unit} for metric, unit in zip(metrics, units)]
+# 创建图表数据
+def create_chart_data(metric_key, unit, chart_type='bar', lang='zh'):
+    translations_lang = translations[lang]
+    metric_label = translations_lang['metric_labels'][metric_key]
+    year_2023 = translations_lang['year_2023']
+    year_2024 = translations_lang['year_2024']
 
-def create_chart_data(metric, unit, chart_type='bar'):
-    fig = px.bar(x=[metric], y=[data_2023[metric], data_2024[metric]], color_discrete_sequence=[COLORS['chart_colors'][1], COLORS['chart_colors'][0]], barmode='group') if chart_type == 'bar' else px.pie(values=[data_2023[metric], data_2024[metric]], names=['2023年', '2024年'], color_discrete_sequence=[COLORS['chart_colors'][1], COLORS['chart_colors'][0]]) if chart_type == 'pie' else px.scatter_polar(r=[data_2023[metric], data_2024[metric]], theta=['2023年', '2024年'], color_discrete_sequence=[COLORS['chart_colors'][1], COLORS['chart_colors'][0]])
-    
+    fig = go.Figure()
+    if chart_type == 'bar':
+        fig.add_trace(go.Bar(
+            name=year_2023,
+            x=[metric_label],
+            y=[data_2023[metric_key]],
+            marker_color=COLORS['chart_colors'][1],
+            hovertemplate=f"%{{y}}{unit}<extra></extra>",
+            marker=dict(opacity=0.9)
+        ))
+        fig.add_trace(go.Bar(
+            name=year_2024,
+            x=[metric_label],
+            y=[data_2024[metric_key]],
+            marker_color=COLORS['chart_colors'][0],
+            hovertemplate=f"%{{y}}{unit}<extra></extra>",
+            marker=dict(opacity=0.9)
+        ))
+        fig.update_layout(barmode='group')
+    elif chart_type == 'pie':
+        fig.add_trace(go.Pie(
+            values=[data_2023[metric_key], data_2024[metric_key]],
+            labels=[year_2023, year_2024],
+            hole=0.4,
+            marker_colors=[COLORS['chart_colors'][1], COLORS['chart_colors'][0]],
+            textinfo='label+percent',
+            hovertemplate="%{label}<br>%{value}" + unit + "<br>占比: %{percent}<extra></extra>",
+            textfont=dict(
+                family='-apple-system, BlinkMacSystemFont, "SF Pro Text"',
+                size=14,
+                color=COLORS['text']
+            ),
+        ))
+    else:  # radar
+        metrics = translations_lang['metrics']
+        categories = [translations_lang['metric_labels'][m] for m in metrics]
+        values_2023 = [data_2023[m] for m in metrics]
+        values_2024 = [data_2024[m] for m in metrics]
+
+        fig.add_trace(go.Scatterpolar(
+            r=values_2023,
+            theta=categories,
+            fill='toself',
+            name=year_2023,
+            line_color=COLORS['chart_colors'][1],
+            hovertemplate="%{theta}<br>%{r}" + "<extra></extra>"
+        ))
+        fig.add_trace(go.Scatterpolar(
+            r=values_2024,
+            theta=categories,
+            fill='toself',
+            name=year_2024,
+            line_color=COLORS['chart_colors'][0],
+            hovertemplate="%{theta}<br>%{r}" + "<extra></extra>"
+        ))
+        fig.update_layout(
+            polar=dict(
+                radialaxis=dict(
+                    visible=True,
+                    showticklabels=False,
+                    gridcolor='rgba(0,0,0,0.1)',
+                ),
+                angularaxis=dict(
+                    gridcolor='rgba(0,0,0,0.1)',
+                    linecolor='rgba(0,0,0,0.1)',
+                )
+            )
+        )
+
     # 通用布局设置
     fig.update_layout(
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
         margin=dict(l=20, r=20, t=40, b=20),
         title=dict(
-            text=f'{metric}对比 (单位: {unit})',
+            text=f'{metric_label} {translations_lang["detailed_comparison"]} (单位: {unit})',
             font=dict(
                 size=16,
                 color=COLORS['text'],
@@ -353,66 +341,347 @@ def create_chart_data(metric, unit, chart_type='bar'):
             font_family='-apple-system, BlinkMacSystemFont, "SF Pro Text"'
         ),
     )
-    
+
+    if chart_type == 'bar':
+        fig.update_xaxes(
+            showgrid=False,
+            showline=True,
+            linecolor='rgba(0,0,0,0.1)',
+            tickfont=dict(
+                family='-apple-system, BlinkMacSystemFont, "SF Pro Text"',
+                size=12,
+                color=COLORS['text']
+            )
+        )
+        fig.update_yaxes(
+            showgrid=True,
+            gridwidth=1,
+            gridcolor='rgba(0,0,0,0.05)',
+            tickfont=dict(
+                family='-apple-system, BlinkMacSystemFont, "SF Pro Text"',
+                size=12,
+                color=COLORS['text']
+            )
+        )
     return fig
 
-# 应用布局
 def serve_layout():
-    metrics = ['总课程数', '总参训人次', '总培训时长', '总培训人时']
-    units = ['门', '人次', '小时', '小时']
-    
     return dbc.Container([
+        # 存储当前语言
+        dcc.Store(id='language-store', data='zh'),
+        # 存储数据
+        dcc.Store(id='data-2023-store', data=data_2023),
+        dcc.Store(id='data-2024-store', data=data_2024),
+        
+        # 语言切换按钮
+        html.Div([
+            dbc.Button("EN", id="language-button", color="secondary", size="sm", outline=True, style={
+                'position': 'absolute',
+                'top': '20px',
+                'right': '20px',
+                'borderColor': COLORS['text'],
+                'color': COLORS['text'],
+            })
+        ]),
+        
         # 标题
-        html.H1("Surfin2024年学习发展工作培训数据看板", 
-                className="text-center", 
+        html.H1(id='page-title',
+                className="text-center",
                 style={'marginBottom': '2rem'}),
         
-        # 年度对比指标
-        html.H4("年度关键指标对比"),
+        # 手动输入组件
+        html.Div([
+            dbc.Row([
+                dbc.Col([
+                    dbc.Label("2023年数据", style={'fontWeight': 'bold'}),
+                    dbc.InputGroup([
+                        dbc.InputGroupText("总课程数"),
+                        dbc.Input(id='input-2023-total_courses', type='number', value=data_2023['total_courses']),
+                    ], className='mb-2'),
+                    dbc.InputGroup([
+                        dbc.InputGroupText("总参训人次"),
+                        dbc.Input(id='input-2023-total_participants', type='number', value=data_2023['total_participants']),
+                    ], className='mb-2'),
+                    dbc.InputGroup([
+                        dbc.InputGroupText("总培训时长"),
+                        dbc.Input(id='input-2023-total_training_hours', type='number', value=data_2023['total_training_hours']),
+                    ], className='mb-2'),
+                    dbc.InputGroup([
+                        dbc.InputGroupText("总培训人时"),
+                        dbc.Input(id='input-2023-total_training_person_hours', type='number', value=data_2023['total_training_person_hours']),
+                    ], className='mb-2'),
+                ], width=6),
+                dbc.Col([
+                    dbc.Label("2024年数据", style={'fontWeight': 'bold'}),
+                    dbc.InputGroup([
+                        dbc.InputGroupText("总课程数"),
+                        dbc.Input(id='input-2024-total_courses', type='number', value=data_2024['total_courses']),
+                    ], className='mb-2'),
+                    dbc.InputGroup([
+                        dbc.InputGroupText("总参训人次"),
+                        dbc.Input(id='input-2024-total_participants', type='number', value=data_2024['total_participants']),
+                    ], className='mb-2'),
+                    dbc.InputGroup([
+                        dbc.InputGroupText("总培训时长"),
+                        dbc.Input(id='input-2024-total_training_hours', type='number', value=data_2024['total_training_hours']),
+                    ], className='mb-2'),
+                    dbc.InputGroup([
+                        dbc.InputGroupText("总培训人时"),
+                        dbc.Input(id='input-2024-total_training_person_hours', type='number', value=data_2024['total_training_person_hours']),
+                    ], className='mb-2'),
+                ], width=6),
+            ], className='mb-4'),
+        ]),
+        
+        # 下载按钮
+        html.Div([
+            dbc.Button(id="download-pdf-button", color="primary", className="mr-2", style={
+                'marginBottom': '2rem',
+                'backgroundColor': COLORS['chart_colors'][0],
+                'borderColor': COLORS['chart_colors'][0],
+                'color': 'white'
+            }),
+            dcc.Download(id="download-pdf")
+        ], style={'textAlign': 'center'}),
+        
+        # 年度对比指标标题
+        html.H4(id='key-metrics-title'),
         
         # 指标卡片
-        dbc.Row([
-            dbc.Col(create_comparison_card("总课程数", data_2024['总课程数'], data_2023['总课程数'], 
-                                         growth_data['总课程数'], "门"), width=12, lg=3, className='mb-4'),
-            dbc.Col(create_comparison_card("总参训人次", data_2024['总参训人次'], data_2023['总参训人次'], 
-                                         growth_data['总参训人次'], "人"), width=12, lg=3, className='mb-4'),
-            dbc.Col(create_comparison_card("总培训时长", data_2024['总培训时长'], data_2023['总培训时长'], 
-                                         growth_data['总培训时长'], "小时"), width=12, lg=3, className='mb-4'),
-            dbc.Col(create_comparison_card("总培训人时", data_2024['总培训人时'], data_2023['总培训人时'], 
-                                         growth_data['总培训人时'], "小时"), width=12, lg=3, className='mb-4'),
-        ], className="g-4"),
+        dbc.Row(id='cards-container', className="g-4"),
         
         # 图表标题
-        html.H4("年度指标详细对比", className="mt-4"),
+        html.H4(id='detailed-comparison-title', className="mt-4"),
         
         # 图表
-        dbc.Row([
-            dbc.Col([
-                html.Div([
-                    create_chart_type_selector(metric),
-                    dcc.Graph(
-                        id=f'chart-{metric}',
-                        figure=create_chart_data(metric, unit),
-                        config={'displayModeBar': False}
-                    )
-                ], className='chart-container')
-            ], width=12, lg=6) 
-            for metric, unit in zip(metrics, units)
-        ], className="g-4"),
+        dbc.Row(id='charts-container', className="g-4"),
         
     ], fluid=True)
 
 app.layout = serve_layout
 
+# 更新页面内容的回调函数
+@app.callback(
+    Output('page-title', 'children'),
+    Output('download-pdf-button', 'children'),
+    Output('key-metrics-title', 'children'),
+    Output('detailed-comparison-title', 'children'),
+    Output('language-button', 'children'),
+    Output('cards-container', 'children'),
+    Output('charts-container', 'children'),
+    Input('language-store', 'data'),
+    Input('data-2023-store', 'data'),
+    Input('data-2024-store', 'data'),
+)
+def update_content(lang, data_2023_store, data_2024_store):
+    global data_2023, data_2024, growth_data
+    data_2023 = data_2023_store
+    data_2024 = data_2024_store
+    growth_data = {
+        key: calculate_growth(data_2024[key], data_2023[key]) for key in data_2023
+    }
+    translations_lang = translations[lang]
+    metrics = translations_lang['metrics']
+    units = translations_lang['units']
+    
+    # 更新按钮文字
+    language_button_text = 'EN' if lang == 'zh' else '中文'
+    
+    # 创建指标卡片
+    cards = [
+        dbc.Col(create_comparison_card(metric, data_2024[metric], data_2023[metric],
+                                       growth_data[metric], units[metric], lang=lang), width=12, lg=3, className='mb-4')
+        for metric in metrics
+    ]
+    
+    # 创建图表
+    charts = [
+        dbc.Col([
+            html.Div([
+                create_chart_type_selector(metric, lang=lang),
+                dcc.Graph(
+                    id=f'chart-{metric}',
+                    figure=create_chart_data(metric, units[metric], lang=lang),
+                    config={'displayModeBar': False}
+                )
+            ], className='chart-container')
+        ], width=12, lg=6)
+        for metric in metrics
+    ]
+    
+    # 更新下载按钮文字
+    download_button_text = translations_lang['download_pdf']
+    
+    return (translations_lang['title'],
+            download_button_text,
+            translations_lang['key_metrics'],
+            translations_lang['detailed_comparison'],
+            language_button_text,
+            cards,
+            charts)
+
+# 切换语言的回调函数
+@app.callback(
+    Output('language-store', 'data'),
+    Input('language-button', 'n_clicks'),
+    State('language-store', 'data')
+)
+def switch_language(n_clicks, lang):
+    if n_clicks is None:
+        raise dash.exceptions.PreventUpdate
+    return 'en' if lang == 'zh' else 'zh'
+
 # 回调函数：更新图表类型
-for metric in ['总课程数', '总参训人次', '总培训时长', '总培训人时']:
+def generate_update_chart(metric_key):
     @app.callback(
-        dash.dependencies.Output(f'chart-{metric}', 'figure'),
-        dash.dependencies.Input(f'chart-type-{metric}', 'value')
+        Output(f'chart-{metric_key}', 'figure'),
+        Input(f'chart-type-{metric_key}', 'value'),
+        Input('language-store', 'data'),
+        Input('data-2023-store', 'data'),
+        Input('data-2024-store', 'data'),
     )
-    def update_chart(chart_type, metric=metric):
-        units = {'总课程数': '门', '总参训人次': '人次', '总培训时长': '小时', '总培训人时': '小时'}
-        return create_chart_data(metric, units[metric], chart_type)
+    def update_chart(chart_type, lang, data_2023_store, data_2024_store):
+        global data_2023, data_2024
+        data_2023 = data_2023_store
+        data_2024 = data_2024_store
+        translations_lang = translations[lang]
+        units = translations_lang['units']
+        return create_chart_data(metric_key, units[metric_key], chart_type, lang=lang)
+    return update_chart
+
+for metric in ['total_courses', 'total_participants', 'total_training_hours', 'total_training_person_hours']:
+    generate_update_chart(metric)
+
+# 回调函数：更新数据存储
+@app.callback(
+    Output('data-2023-store', 'data'),
+    Output('data-2024-store', 'data'),
+    Input('input-2023-total_courses', 'value'),
+    Input('input-2023-total_participants', 'value'),
+    Input('input-2023-total_training_hours', 'value'),
+    Input('input-2023-total_training_person_hours', 'value'),
+    Input('input-2024-total_courses', 'value'),
+    Input('input-2024-total_participants', 'value'),
+    Input('input-2024-total_training_hours', 'value'),
+    Input('input-2024-total_training_person_hours', 'value'),
+    State('data-2023-store', 'data'),
+    State('data-2024-store', 'data'),
+)
+def update_data_manual(
+    input_2023_total_courses, input_2023_total_participants,
+    input_2023_total_training_hours, input_2023_total_training_person_hours,
+    input_2024_total_courses, input_2024_total_participants,
+    input_2024_total_training_hours, input_2024_total_training_person_hours,
+    data_2023_store, data_2024_store
+):
+    data_2023 = data_2023_store.copy()
+    data_2024 = data_2024_store.copy()
+    data_2023['total_courses'] = input_2023_total_courses or 0
+    data_2023['total_participants'] = input_2023_total_participants or 0
+    data_2023['total_training_hours'] = input_2023_total_training_hours or 0
+    data_2023['total_training_person_hours'] = input_2023_total_training_person_hours or 0
+    data_2024['total_courses'] = input_2024_total_courses or 0
+    data_2024['total_participants'] = input_2024_total_participants or 0
+    data_2024['total_training_hours'] = input_2024_total_training_hours or 0
+    data_2024['total_training_person_hours'] = input_2024_total_training_person_hours or 0
+    return data_2023, data_2024
+
+# 回调函数：生成并下载PDF
+@app.callback(
+    Output("download-pdf", "data"),
+    Input("download-pdf-button", "n_clicks"),
+    State('language-store', 'data'),
+    State('data-2023-store', 'data'),
+    State('data-2024-store', 'data'),
+    prevent_initial_call=True,
+)
+def generate_pdf(n_clicks, lang, data_2023_store, data_2024_store):
+    try:
+        data_2023 = data_2023_store
+        data_2024 = data_2024_store
+        growth_data = {
+            key: calculate_growth(data_2024[key], data_2023[key]) for key in data_2023
+        }
+        translations_lang = translations[lang]
+        metrics = translations_lang['metrics']
+        units_dict = translations_lang['units']
+        title = translations_lang['title']
+        year_2023 = translations_lang['year_2023']
+        year_2024 = translations_lang['year_2024']
+        growth_label = translations_lang['growth']
+        metric_labels = translations_lang['metric_labels']
+        
+        # 创建PDF缓冲区
+        buffer = BytesIO()
+        p = canvas.Canvas(buffer, pagesize=letter)
+        
+        # 使用内置字体
+        pdfmetrics.registerFont(UnicodeCIDFont('STSong-Light'))
+        p.setFont("STSong-Light", 16)
+        p.drawString(100, 750, title)
+        
+        # 绘制2023年数据
+        y = 700
+        p.setFont("STSong-Light", 12)
+        p.drawString(50, y, f"{year_2023}{translations_lang['key_metrics']}:")
+        y -= 20
+        for key in metrics:
+            value = data_2023[key]
+            label = metric_labels[key]
+            p.drawString(60, y, f"{label}: {value}{units_dict[key]}")
+            y -= 15
+        
+        # 绘制2024年数据
+        y -= 10
+        p.drawString(50, y, f"{year_2024}{translations_lang['key_metrics']}:")
+        y -= 20
+        for key in metrics:
+            value = data_2024[key]
+            label = metric_labels[key]
+            p.drawString(60, y, f"{label}: {value}{units_dict[key]}")
+            y -= 15
+        
+        # 绘制增长率
+        y -= 10
+        p.drawString(50, y, f"{growth_label}:")
+        y -= 20
+        for key in metrics:
+            value = growth_data[key]
+            label = metric_labels[key]
+            growth_text = f"{'+' if value > 0 else ''}{value:.1f}%"
+            p.drawString(60, y, f"{label}: {growth_text}")
+            y -= 15
+        
+        # 插入图表
+        y -= 30  # 调整位置
+        
+        for metric in metrics:
+            if y < 300:
+                p.showPage()
+                y = 750
+                p.setFont("STSong-Light", 12)
+            
+            # 生成图表
+            fig = create_chart_data(metric, units_dict[metric], chart_type='bar', lang=lang)
+            
+            # 将图表保存为图像
+            img_bytes = fig.to_image(format="png", engine='kaleido')
+            img_buffer = BytesIO(img_bytes)
+            img_buffer.seek(0)
+            
+            # 将图像插入PDF
+            img = ImageReader(img_buffer)
+            p.drawImage(img, 50, y - 250, width=500, height=250)
+            y -= 270  # 调整y位置
+        
+        # 完成PDF绘制
+        p.save()
+        buffer.seek(0)
+        filename = "数据报告.pdf" if lang == 'zh' else "Data_Report.pdf"
+        return dcc.send_bytes(buffer.getvalue(), filename=filename)
+    except Exception as e:
+        print(f"PDF生成错误: {e}")
+        return
 
 if __name__ == '__main__':
-    app.run_server(debug=False, host='0.0.0.0')
+    app.run_server(host='localhost', port=8050, debug=True)
