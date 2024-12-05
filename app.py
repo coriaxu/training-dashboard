@@ -15,7 +15,7 @@ from reportlab.lib.utils import ImageReader
 COLORS = {
     'background': '#F5F5F0',  # 温暖的米白色背景
     'text': '#2C3E50',        # 深灰偏暖的文字颜色
-    'card_bg': 'rgba(255, 255, 255, 0.8)',  # 纯白磨砂玻璃
+    'card_bg': 'rgba(255, 255, 255, 0.9)',  # 纯白磨砂玻璃
     'positive': '#7CB342',    # 橄榄绿用于正增长
     'negative': '#E57373',    # 柔和的红色用于负增长
     'chart_colors': [
@@ -35,20 +35,12 @@ translations = {
         'key_metrics': "年度关键指标对比",
         'detailed_comparison': "年度指标详细对比",
         'analysis_title': "培训数据深度分析报告",
-        'analysis_content': (
-            "基于当前的培训数据分析，我们观察到以下趋势：\n\n"
-            "- **总课程数**：{course_trend}\n"
-            "- **总参训人次**：{participants_trend}\n"
-            "- **总培训时长**：{hours_trend}\n"
-            "- **总培训人时**：{person_hours_trend}\n\n"
-            "这些变化可能是由于{possible_causes}。\n\n"
-            "为了进一步提升培训效果，我们建议{recommendations}。"
-        ),
-        'trend_increase': "相比去年增长了{value:.1f}%，表明培训课程的数量有所增加",
-        'trend_decrease': "相比去年减少了{value:.1f}%，需要关注培训课程的数量下降趋势",
-        'trend_no_change': "与去年持平，培训课程数量保持稳定",
-        'possible_causes': "业务需求的变化、员工发展计划的调整或培训资源的重新分配",
-        'recommendations': "深入分析培训需求，优化培训课程设计，加强培训资源的投入",
+        'analysis_content': [
+            "1. 培训场次减少的背后，是高效聚焦与资源优化。过去三年，培训场次从 47场（22年） 降至 24场（24年），通过优化培训内容、整合资源，提升了培训的针对性和深度。24年则注重“关键岗位”、“AI 分享系列”，更贴合组织需求。",
+            "2. 虽然总时长缩减至 57.5小时（24年），培训总人时达到1036.5小时，同比增长 60%。紧凑高效型课程，帮助更多学员在更短时间内掌握高价值技能。",
+            "3. 培训参与人数稳定，覆盖面高，渗透率强。参与人数稳定在429人次，说明尽管场次减少，覆盖面未下降，培训渗透率始终保持在高位。22年到24年的人数对比表明，无论在公司人数增长还是培训调整情况下，我始终确保了对关键群体的覆盖。"
+        ],
+        'analysis_placeholder': "",
         'total_courses': "总课程数",
         'total_participants': "总参训人次",
         'total_training_hours': "总培训时长",
@@ -77,21 +69,10 @@ translations = {
         'download_pdf': "Download PDF Report",
         'key_metrics': "Annual Key Metrics Comparison",
         'detailed_comparison': "Detailed Annual Metrics Comparison",
-        'analysis_title': "In-depth Training Data Analysis Report",
-        'analysis_content': (
-            "Based on the current training data analysis, we have observed the following trends:\n\n"
-            "- **Total Courses**: {course_trend}\n"
-            "- **Total Participants**: {participants_trend}\n"
-            "- **Total Training Hours**: {hours_trend}\n"
-            "- **Total Training Person-Hours**: {person_hours_trend}\n\n"
-            "These changes may be due to {possible_causes}.\n\n"
-            "To further enhance training effectiveness, we recommend {recommendations}."
-        ),
-        'trend_increase': "increased by {value:.1f}% compared to last year, indicating a rise in the number of training courses",
-        'trend_decrease': "decreased by {value:.1f}% compared to last year, requiring attention to the downward trend in training courses",
-        'trend_no_change': "remained the same as last year, maintaining a stable number of training courses",
-        'possible_causes': "changes in business needs, adjustments in employee development plans, or reallocation of training resources",
-        'recommendations': "conducting in-depth training needs analysis, optimizing training course design, and enhancing investment in training resources",
+        'analysis_title': "Detailed Analysis of Training Data",
+        'analysis_content': [
+            "Analysis content not available in English."
+        ],
         'total_courses': "Total Courses",
         'total_participants': "Total Participants",
         'total_training_hours': "Total Training Hours",
@@ -154,7 +135,10 @@ app.index_string = '''
         {%favicon%}
         {%css%}
         <style>
-            /* 您的CSS样式代码 */
+            body {
+                background-color: ''' + COLORS['background'] + ''';
+            }
+            /* 其他全局样式 */
         </style>
     </head>
     <body>
@@ -178,63 +162,59 @@ def create_comparison_card(metric_key, value_2024, value_2023, growth, suffix=''
 
     growth_color = COLORS['positive'] if growth >= 0 else COLORS['negative']
     return dbc.Card(
-        [
-            dbc.CardBody(
-                [
-                    html.H4(title, className="card-title", style={
+        dbc.CardBody(
+            [
+                html.H4(title, className="card-title", style={
+                    'color': COLORS['text'],
+                    'margin-bottom': '1rem',
+                    'font-weight': '500'
+                }),
+                html.Div([
+                    html.H2(f"{value_2024}{suffix}", style={
                         'color': COLORS['text'],
+                        'margin-bottom': '0.5rem',
+                        'font-weight': '600'
+                    }),
+                    html.P(f"{year_2024}", style={
+                        'color': COLORS['text'],
+                        'opacity': '0.7',
                         'margin-bottom': '1rem',
-                        'font-weight': '500'
+                        'font-size': '0.9rem'
                     }),
                     html.Div([
-                        html.H2(f"{value_2024}{suffix}", style={
+                        html.Span(f"{value_2023}{suffix}", style={
                             'color': COLORS['text'],
-                            'margin-bottom': '0.5rem',
-                            'font-weight': '600'
+                            'opacity': '0.8',
+                            'font-weight': '500',
+                            'margin-right': '0.5rem'
                         }),
-                        html.P(f"{year_2024}", style={
+                        html.Small(f"{year_2023}", style={
                             'color': COLORS['text'],
-                            'opacity': '0.7',
-                            'margin-bottom': '1rem',
-                            'font-size': '0.9rem'
-                        }),
-                        html.Div([
-                            html.Span(f"{value_2023}{suffix}", style={
-                                'color': COLORS['text'],
-                                'opacity': '0.8',
-                                'font-weight': '500',
-                                'margin-right': '0.5rem'
-                            }),
-                            html.Small(f"{year_2023}", style={
-                                'color': COLORS['text'],
-                                'opacity': '0.6'
-                            })
-                        ]),
-                        html.Div([
-                            html.Span(
-                                f"{'+' if growth > 0 else ''}{growth:.1f}%",
-                                style={
-                                    'color': growth_color,
-                                    'font-weight': '600',
-                                    'margin-top': '0.5rem',
-                                    'display': 'inline-block',
-                                    'padding': '0.25rem 0.75rem',
-                                    'border-radius': '1rem',
-                                    'background-color': f"rgba({int(growth_color[1:3], 16)}, {int(growth_color[3:5], 16)}, {int(growth_color[5:7], 16)}, 0.1)",
-                                }
-                            ),
-                        ], style={'margin-top': '0.5rem'})
-                    ])
-                ]
-            )
-        ],
+                            'opacity': '0.6'
+                        })
+                    ]),
+                    html.Div([
+                        html.Span(
+                            f"{'+' if growth > 0 else ''}{growth:.1f}%",
+                            style={
+                                'color': growth_color,
+                                'font-weight': '600',
+                                'margin-top': '0.5rem',
+                                'display': 'inline-block',
+                                'padding': '0.25rem 0.75rem',
+                                'border-radius': '1rem',
+                                'background-color': f"rgba({int(growth_color[1:3], 16)}, {int(growth_color[3:5], 16)}, {int(growth_color[5:7], 16)}, 0.1)",
+                            }
+                        ),
+                    ], style={'margin-top': '0.5rem'})
+                ])
+            ]
+        ),
         style={
             'background-color': COLORS['card_bg'],
             'border': f"1px solid {COLORS['border']}",
             'border-radius': '1rem',
             'overflow': 'hidden',
-            'backdrop-filter': 'blur(10px)',
-            '-webkit-backdrop-filter': 'blur(10px)',
             'box-shadow': '0 4px 6px rgba(44, 62, 80, 0.05)',
             'transition': 'all 0.3s ease',
             'height': '100%'
@@ -457,15 +437,23 @@ def serve_layout():
         html.H4(id='analysis-title', className="mt-4"),
         
         # 分析内容
-        html.Div(id='analysis-content', style={
-            'background-color': COLORS['card_bg'],
-            'padding': '2rem',
-            'border-radius': '1rem',
-            'margin-bottom': '2rem',
-            'color': COLORS['text'],
-            'box-shadow': '0 4px 6px rgba(44, 62, 80, 0.05)',
-            'border': f"1px solid {COLORS['border']}",
-        }),
+        dbc.Card(
+            dbc.CardBody(
+                [
+                    # 这里的内容将在回调中更新
+                    html.Div(id='analysis-content')
+                ]
+            ),
+            style={
+                'background-color': COLORS['card_bg'],
+                'border': f"1px solid {COLORS['border']}",
+                'border-radius': '1rem',
+                'box-shadow': '0 4px 6px rgba(44, 62, 80, 0.05)',
+                'color': COLORS['text'],
+                'padding': '2rem',
+                'margin-bottom': '2rem'
+            }
+        ),
         
     ], fluid=True)
 
@@ -474,52 +462,22 @@ app.layout = serve_layout
 # 生成分析内容
 def generate_analysis(lang):
     translations_lang = translations[lang]
-    year_2023 = translations_lang['year_2023']
-    year_2024 = translations_lang['year_2024']
-    analysis_template = translations_lang['analysis_content']
-    trend_increase = translations_lang['trend_increase']
-    trend_decrease = translations_lang['trend_decrease']
-    trend_no_change = translations_lang['trend_no_change']
-    possible_causes = translations_lang['possible_causes']
-    recommendations = translations_lang['recommendations']
-    metrics = translations_lang['metrics']
-    metric_labels = translations_lang['metric_labels']
+    analysis_contents = translations_lang['analysis_content']
     
-    trends = {}
-    for metric in metrics:
-        growth = growth_data[metric]
-        if growth > 0:
-            trend_text = trend_increase.format(value=abs(growth))
-        elif growth < 0:
-            trend_text = trend_decrease.format(value=abs(growth))
-        else:
-            trend_text = trend_no_change
-        trends[metric + '_trend'] = trend_text
-    
-    analysis_text = analysis_template.format(
-        course_trend=trends['total_courses_trend'],
-        participants_trend=trends['total_participants_trend'],
-        hours_trend=trends['total_training_hours_trend'],
-        person_hours_trend=trends['total_training_person_hours_trend'],
-        possible_causes=possible_causes,
-        recommendations=recommendations
-    )
-    
-    # 使用卡片式布局和图标
-    analysis_card = dbc.Card(
-        dbc.CardBody([
-            html.P(analysis_text, style={'whiteSpace': 'pre-line', 'fontSize': '1rem'}),
-        ]),
-        style={
-            'background-color': COLORS['card_bg'],
-            'border': f"1px solid {COLORS['border']}",
-            'border-radius': '1rem',
-            'box-shadow': '0 4px 6px rgba(44, 62, 80, 0.05)',
-            'color': COLORS['text'],
-        }
-    )
-    
-    return analysis_card
+    if lang == 'zh':
+        # 创建有序列表
+        analysis_list = html.Ol(
+            [
+                html.Li(analysis_contents[0], style={'margin-bottom': '1rem'}),
+                html.Li(analysis_contents[1], style={'margin-bottom': '1rem'}),
+                html.Li(analysis_contents[2], style={'margin-bottom': '1rem'}),
+            ],
+            style={'fontSize': '1rem'}
+        )
+        return analysis_list
+    else:
+        # 英文占位符
+        return html.P(translations_lang['analysis_content'][0], style={'fontSize': '1rem'})
 
 # 更新页面内容的回调函数
 @app.callback(
@@ -698,7 +656,7 @@ def generate_pdf(n_clicks, lang, data_2023_store, data_2024_store):
     try:
         data_2023 = data_2023_store
         data_2024 = data_2024_store
-        growth_data = {
+        growth_data_local = {
             key: calculate_growth(data_2024[key], data_2023[key]) for key in data_2023
         }
         translations_lang = translations[lang]
@@ -745,7 +703,7 @@ def generate_pdf(n_clicks, lang, data_2023_store, data_2024_store):
         p.drawString(50, y, f"{growth_label}:")
         y -= 20
         for key in metrics:
-            value = growth_data[key]
+            value = growth_data_local[key]
             label = metric_labels[key]
             growth_text = f"{'+' if value > 0 else ''}{value:.1f}%"
             p.drawString(60, y, f"{label}: {growth_text}")
@@ -757,17 +715,19 @@ def generate_pdf(n_clicks, lang, data_2023_store, data_2024_store):
         p.drawString(50, y, translations_lang['analysis_title'])
         y -= 20
         p.setFont("STSong-Light", 12)
-        analysis_content = generate_analysis(lang)
+        
         # 获取分析文本
-        analysis_text = analysis_content.children[0].children
-        text_lines = analysis_text.split('\n')
-        for line in text_lines:
-            p.drawString(60, y, line)
-            y -= 15
-            if y < 100:
-                p.showPage()
-                y = 750
-                p.setFont("STSong-Light", 12)
+        analysis_content = translations_lang['analysis_content']
+        for line in analysis_content:
+            # 分割长行以适应页面宽度
+            lines = split_text(line, 90)
+            for subline in lines:
+                p.drawString(60, y, subline)
+                y -= 15
+                if y < 100:
+                    p.showPage()
+                    y = 750
+                    p.setFont("STSong-Light", 12)
         
         # 插入图表
         y -= 30  # 调整位置
@@ -799,6 +759,16 @@ def generate_pdf(n_clicks, lang, data_2023_store, data_2024_store):
     except Exception as e:
         print(f"PDF生成错误: {e}")
         return
+
+def split_text(text, max_length):
+    """
+    简单的文本分割函数，按空格分割，确保每行不超过 max_length 个字符。
+    适用于中文文本，因为中文没有空格，直接按字符分割。
+    """
+    if len(text) <= max_length:
+        return [text]
+    else:
+        return [text[i:i+max_length] for i in range(0, len(text), max_length)]
 
 if __name__ == '__main__':
     app.run_server(host='localhost', port=8050, debug=True)
