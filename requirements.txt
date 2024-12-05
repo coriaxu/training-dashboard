@@ -1,0 +1,6 @@
+dash==2.11.1
+dash-bootstrap-components==1.4.2
+plotly==5.16.1
+pandas==2.0.3
+flask==2.2.5
+python-dateutil==2.8.2

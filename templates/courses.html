@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}培训课程 - 培训管理系统{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3">培训课程</h1>
+        {% if 'admin' in current_user.roles|map(attribute='name') %}
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newCourseModal">
+            <i class="bi bi-plus"></i> 新增课程
+        </button>
+        {% endif %}
+    </div>
+
+    <!-- 课程分类标签 -->
+    <div class="mb-4">
+        <div class="btn-group">
+            <button type="button" class="btn btn-outline-primary active">全部</button>
+            {% for category in categories %}
+            <button type="button" class="btn btn-outline-primary">{{ category.name }}</button>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- 课程列表 -->
+    <div class="row">
+        {% for course in courses %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ course.name }}</h5>
+                    <h6 class="card-subtitle mb-2 text-muted">{{ course.category.name }}</h6>
+                    <p class="card-text">{{ course.description }}</p>
+                    <ul class="list-unstyled">
+                        <li><i class="bi bi-clock"></i> 培训时长：{{ course.duration }} 小时</li>
+                        <li><i class="bi bi-people"></i> 最大人数：{{ course.max_participants }} 人</li>
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('course_detail', course_id=course.id) }}" class="btn btn-primary btn-sm">
+                        查看详情
+                    </a>
+                    {% if 'admin' in current_user.roles|map(attribute='name') %}
+                    <button class="btn btn-warning btn-sm" onclick="editCourse({{ course.id }})">
+                        编辑
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteCourse({{ course.id }})">
+                        删除
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- 新增课程模态框 -->
+<div class="modal fade" id="newCourseModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">新增课程</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="newCourseForm" method="POST" action="{{ url_for('new_course') }}">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">课程名称</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="category_id" class="form-label">课程分类</label>
+                        <select class="form-select" id="category_id" name="category_id" required>
+                            {% for category in categories %}
+                            <option value="{{ category.id }}">{{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">课程描述</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="duration" class="form-label">培训时长（小时）</label>
+                        <input type="number" class="form-control" id="duration" name="duration" step="0.5" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="max_participants" class="form-label">最大人数</label>
+                        <input type="number" class="form-control" id="max_participants" name="max_participants" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="submit" form="newCourseForm" class="btn btn-primary">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function editCourse(courseId) {
+    // 实现编辑课程的逻辑
+}
+
+function deleteCourse(courseId) {
+    if (confirm('确定要删除这个课程吗？')) {
+        // 实现删除课程的逻辑
+    }
+}
+
+// 课程分类筛选
+document.querySelectorAll('.btn-group .btn').forEach(button => {
+    button.addEventListener('click', function() {
+        document.querySelector('.btn-group .active').classList.remove('active');
+        this.classList.add('active');
+        // 实现课程筛选逻辑
+    });
+});
+</script>
+{% endblock %}

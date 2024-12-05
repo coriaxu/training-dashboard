@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+
+{% block title %}系统管理 - 培训管理系统{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3">系统管理</h1>
+        <div>
+            <button class="btn btn-success me-2" onclick="createBackup()">
+                <i class="bi bi-download"></i> 创建备份
+            </button>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#restoreModal">
+                <i class="bi bi-upload"></i> 恢复备份
+            </button>
+        </div>
+    </div>
+
+    <!-- 系统状态卡片 -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                系统运行时间</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">30 天</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-clock-history fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                数据库大小</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">256 MB</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-database fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                存储空间使用</div>
+                            <div class="row no-gutters align-items-center">
+                                <div class="col-auto">
+                                    <div class="h5 mb-0 mr-3 font-weight-bold text-gray-800">60%</div>
+                                </div>
+                                <div class="col">
+                                    <div class="progress progress-sm mr-2">
+                                        <div class="progress-bar bg-info" role="progressbar" style="width: 60%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-hdd fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                活跃用户数</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">18</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-people fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 备份历史 -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">备份历史</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>备份文件</th>
+                            <th>创建时间</th>
+                            <th>大小</th>
+                            <th>创建者</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for backup in backups %}
+                        <tr>
+                            <td>{{ backup.filename }}</td>
+                            <td>{{ backup.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>{{ backup.size }}</td>
+                            <td>{{ backup.created_by.username }}</td>
+                            <td>
+                                <span class="badge bg-success">完成</span>
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-primary" onclick="downloadBackup('{{ backup.id }}')">
+                                        下载
+                                    </button>
+                                    <button class="btn btn-sm btn-warning" onclick="restoreBackup('{{ backup.id }}')">
+                                        恢复
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" onclick="deleteBackup('{{ backup.id }}')">
+                                        删除
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 系统日志 -->
+    <div class="card shadow">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">系统日志</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>时间</th>
+                            <th>级别</th>
+                            <th>模块</th>
+                            <th>操作</th>
+                            <th>用户</th>
+                            <th>IP地址</th>
+                            <th>详情</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>2024-01-01 10:00:00</td>
+                            <td><span class="badge bg-info">INFO</span></td>
+                            <td>用户管理</td>
+                            <td>用户登录</td>
+                            <td>admin</td>
+                            <td>127.0.0.1</td>
+                            <td>登录成功</td>
+                        </tr>
+                        <tr>
+                            <td>2024-01-01 09:55:00</td>
+                            <td><span class="badge bg-warning">WARN</span></td>
+                            <td>系统</td>
+                            <td>备份</td>
+                            <td>system</td>
+                            <td>127.0.0.1</td>
+                            <td>自动备份完成</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 恢复备份模态框 -->
+<div class="modal fade" id="restoreModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">恢复备份</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="restoreForm" method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="backup_file" class="form-label">选择备份文件</label>
+                        <input type="file" class="form-control" id="backup_file" name="backup_file" accept=".zip,.sql" required>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="confirm_restore" required>
+                        <label class="form-check-label" for="confirm_restore">
+                            我确认要恢复此备份文件，这将覆盖当前的数据
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="submit" form="restoreForm" class="btn btn-primary">开始恢复</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function createBackup() {
+    if (confirm('确定要创建新的备份吗？')) {
+        fetch('/api/backup/create', {
+            method: 'POST'
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            }
+        });
+    }
+}
+
+function downloadBackup(backupId) {
+    window.location.href = `/api/backup/${backupId}/download`;
+}
+
+function restoreBackup(backupId) {
+    if (confirm('确定要恢复此备份吗？这将覆盖当前的数据！')) {
+        fetch(`/api/backup/${backupId}/restore`, {
+            method: 'POST'
+        })
+        .then(response => {
+            if (response.ok) {
+                alert('备份恢复成功！');
+                location.reload();
+            }
+        });
+    }
+}
+
+function deleteBackup(backupId) {
+    if (confirm('确定要删除此备份吗？此操作不可恢复！')) {
+        fetch(`/api/backup/${backupId}`, {
+            method: 'DELETE'
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            }
+        });
+    }
+}
+
+// 文件类型验证
+document.getElementById('backup_file').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    const allowedTypes = ['.zip', '.sql'];
+    const fileExt = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+    
+    if (!allowedTypes.includes(fileExt)) {
+        alert('不支持的文件类型！请上传 .zip 或 .sql 文件。');
+        this.value = '';
+    }
+});
+
+// 自动更新系统状态
+setInterval(function() {
+    fetch('/api/system/status')
+        .then(response => response.json())
+        .then(data => {
+            // 更新系统状态显示
+        });
+}, 60000); // 每分钟更新一次
+</script>
+{% endblock %}

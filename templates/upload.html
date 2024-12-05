@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}数据导入 - 培训管理系统{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">批量导入培训数据</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="file" class="form-label">选择文件</label>
+                            <input type="file" class="form-control" id="file" name="file" accept=".xlsx,.xls,.csv" required>
+                            <div class="form-text">支持的文件格式：Excel (.xlsx, .xls) 和 CSV (.csv)</div>
+                        </div>
+                        <div class="alert alert-info">
+                            <h6>文件格式要求：</h6>
+                            <ul>
+                                <li>文件必须包含以下列：课程名称、培训时长</li>
+                                <li>日期格式：YYYY-MM-DD</li>
+                                <li>时间格式：HH:MM:SS</li>
+                                <li>数字列请确保格式正确</li>
+                            </ul>
+                        </div>
+                        <div class="mb-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-upload"></i> 上传并导入
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">导入历史</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>文件名</th>
+                                    <th>导入时间</th>
+                                    <th>状态</th>
+                                    <th>成功数</th>
+                                    <th>失败数</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>example.xlsx</td>
+                                    <td>2024-01-01 10:00:00</td>
+                                    <td><span class="badge bg-success">成功</span></td>
+                                    <td>100</td>
+                                    <td>0</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-info">查看详情</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('file').addEventListener('change', function(e) {
+    var fileName = e.target.files[0].name;
+    var fileExt = fileName.split('.').pop().toLowerCase();
+    if (!['xlsx', 'xls', 'csv'].includes(fileExt)) {
+        alert('不支持的文件格式！请上传 Excel 或 CSV 文件。');
+        e.target.value = '';
+    }
+});
+</script>
+{% endblock %}

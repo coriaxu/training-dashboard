@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+
+{% block title %}用户管理 - 培训管理系统{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3">用户管理</h1>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newUserModal">
+            <i class="bi bi-person-plus"></i> 新增用户
+        </button>
+    </div>
+
+    <!-- 用户筛选 -->
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label for="department" class="form-label">部门</label>
+                    <select class="form-select" id="department" name="department">
+                        <option value="">全部</option>
+                        <option value="技术部">技术部</option>
+                        <option value="市场部">市场部</option>
+                        <option value="人事部">人事部</option>
+                        <option value="财务部">财务部</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="role" class="form-label">角色</label>
+                    <select class="form-select" id="role" name="role">
+                        <option value="">全部</option>
+                        <option value="admin">管理员</option>
+                        <option value="user">普通用户</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="search" class="form-label">搜索</label>
+                    <input type="text" class="form-control" id="search" name="search" placeholder="用户名/邮箱">
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> 搜索
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 用户列表 -->
+    <div class="card shadow">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>用户名</th>
+                            <th>邮箱</th>
+                            <th>部门</th>
+                            <th>职位</th>
+                            <th>角色</th>
+                            <th>注册时间</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>{{ user.username }}</td>
+                            <td>{{ user.email }}</td>
+                            <td>{{ user.department }}</td>
+                            <td>{{ user.position }}</td>
+                            <td>
+                                {% for role in user.roles %}
+                                <span class="badge {% if role.name == 'admin' %}bg-danger{% else %}bg-primary{% endif %}">
+                                    {{ role.name }}
+                                </span>
+                                {% endfor %}
+                            </td>
+                            <td>{{ user.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>
+                                <span class="badge {% if user.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                                    {{ '激活' if user.is_active else '禁用' }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-warning" onclick="editUser({{ user.id }})">
+                                        编辑
+                                    </button>
+                                    <button class="btn btn-sm {% if user.is_active %}btn-secondary{% else %}btn-success{% endif %}"
+                                            onclick="toggleUserStatus({{ user.id }})">
+                                        {{ '禁用' if user.is_active else '激活' }}
+                                    </button>
+                                    {% if user.username != 'admin' %}
+                                    <button class="btn btn-sm btn-danger" onclick="deleteUser({{ user.id }})">
+                                        删除
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 分页 -->
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#" tabindex="-1">上一页</a>
+                    </li>
+                    <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                    <li class="page-item"><a class="page-link" href="#">2</a></li>
+                    <li class="page-item"><a class="page-link" href="#">3</a></li>
+                    <li class="page-item">
+                        <a class="page-link" href="#">下一页</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<!-- 新增用户模态框 -->
+<div class="modal fade" id="newUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">新增用户</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="newUserForm" method="POST" action="{{ url_for('admin_new_user') }}">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">用户名</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">邮箱</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="department" class="form-label">部门</label>
+                        <input type="text" class="form-control" id="department" name="department">
+                    </div>
+                    <div class="mb-3">
+                        <label for="position" class="form-label">职位</label>
+                        <input type="text" class="form-control" id="position" name="position">
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">密码</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="roles" class="form-label">角色</label>
+                        <select class="form-select" id="roles" name="roles" multiple>
+                            {% for role in all_roles %}
+                            <option value="{{ role.id }}">{{ role.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="submit" form="newUserForm" class="btn btn-primary">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 编辑用户模态框 -->
+<div class="modal fade" id="editUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">编辑用户</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editUserForm" method="POST">
+                    <input type="hidden" id="edit_user_id" name="user_id">
+                    <div class="mb-3">
+                        <label for="edit_email" class="form-label">邮箱</label>
+                        <input type="email" class="form-control" id="edit_email" name="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_department" class="form-label">部门</label>
+                        <input type="text" class="form-control" id="edit_department" name="department">
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_position" class="form-label">职位</label>
+                        <input type="text" class="form-control" id="edit_position" name="position">
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_password" class="form-label">新密码</label>
+                        <input type="password" class="form-control" id="edit_password" name="password" 
+                               placeholder="留空表示不修改">
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_roles" class="form-label">角色</label>
+                        <select class="form-select" id="edit_roles" name="roles" multiple>
+                            {% for role in all_roles %}
+                            <option value="{{ role.id }}">{{ role.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="submit" form="editUserForm" class="btn btn-primary">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function editUser(userId) {
+    // 获取用户数据并填充表单
+    fetch(`/api/users/${userId}`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('edit_user_id').value = userId;
+            document.getElementById('edit_email').value = data.email;
+            document.getElementById('edit_department').value = data.department;
+            document.getElementById('edit_position').value = data.position;
+            
+            // 设置角色
+            const roleSelect = document.getElementById('edit_roles');
+            Array.from(roleSelect.options).forEach(option => {
+                option.selected = data.roles.includes(parseInt(option.value));
+            });
+            
+            // 显示模态框
+            new bootstrap.Modal(document.getElementById('editUserModal')).show();
+        });
+}
+
+function toggleUserStatus(userId) {
+    if (confirm('确定要更改此用户的状态吗？')) {
+        fetch(`/api/users/${userId}/toggle-status`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            }
+        });
+    }
+}
+
+function deleteUser(userId) {
+    if (confirm('确定要删除此用户吗？此操作不可恢复！')) {
+        fetch(`/api/users/${userId}`, {
+            method: 'DELETE'
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            }
+        });
+    }
+}
+
+// 表单验证
+document.getElementById('newUserForm').addEventListener('submit', function(e) {
+    const password = document.getElementById('password').value;
+    if (password.length < 6) {
+        e.preventDefault();
+        alert('密码长度必须至少为6个字符');
+    }
+});
+
+document.getElementById('editUserForm').addEventListener('submit', function(e) {
+    const password = document.getElementById('edit_password').value;
+    if (password && password.length < 6) {
+        e.preventDefault();
+        alert('密码长度必须至少为6个字符');
+    }
+});
+</script>
+{% endblock %}

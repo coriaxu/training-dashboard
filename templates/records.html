@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+
+{% block title %}培训记录 - 培训管理系统{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3">培训记录</h1>
+        <div>
+            <a href="{{ url_for('export_data', export_type='training_records') }}" class="btn btn-success">
+                <i class="bi bi-download"></i> 导出记录
+            </a>
+            {% if 'admin' in current_user.roles|map(attribute='name') %}
+            <a href="{{ url_for('upload') }}" class="btn btn-primary">
+                <i class="bi bi-upload"></i> 批量导入
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 筛选器 -->
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label for="course" class="form-label">培训课程</label>
+                    <select class="form-select" id="course" name="course">
+                        <option value="">全部</option>
+                        {% for course in courses %}
+                        <option value="{{ course.id }}">{{ course.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="status" class="form-label">状态</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="">全部</option>
+                        <option value="已完成">已完成</option>
+                        <option value="进行中">进行中</option>
+                        <option value="未开始">未开始</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="date_range" class="form-label">时间范围</label>
+                    <select class="form-select" id="date_range" name="date_range">
+                        <option value="">全部</option>
+                        <option value="7">最近7天</option>
+                        <option value="30">最近30天</option>
+                        <option value="90">最近90天</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> 搜索
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 记录列表 -->
+    <div class="card shadow">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>培训课程</th>
+                            <th>开始时间</th>
+                            <th>结束时间</th>
+                            <th>培训讲师</th>
+                            <th>培训时长</th>
+                            <th>状态</th>
+                            <th>完成时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for record in records %}
+                        <tr>
+                            <td>{{ record.course.name }}</td>
+                            <td>{{ record.session.start_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>{{ record.session.end_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>{{ record.session.trainer.name }}</td>
+                            <td>{{ record.course.duration }} 小时</td>
+                            <td>
+                                <span class="badge {% if record.status == '已完成' %}bg-success{% elif record.status == '进行中' %}bg-primary{% else %}bg-warning{% endif %}">
+                                    {{ record.status }}
+                                </span>
+                            </td>
+                            <td>{{ record.completion_date.strftime('%Y-%m-%d %H:%M') if record.completion_date }}</td>
+                            <td>
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#recordDetailModal{{ record.id }}">
+                                        查看详情
+                                    </button>
+                                    {% if record.status == '已完成' and record.certificate %}
+                                    <a href="{{ url_for('download_certificate', record_id=record.id) }}" class="btn btn-sm btn-success">
+                                        下载证书
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- 记录详情模态框 -->
+                        <div class="modal fade" id="recordDetailModal{{ record.id }}" tabindex="-1">
+                            <div class="modal-dialog modal-lg">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">培训记录详情</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <h6>培训信息</h6>
+                                                <ul class="list-unstyled">
+                                                    <li><strong>课程名称：</strong>{{ record.course.name }}</li>
+                                                    <li><strong>培训讲师：</strong>{{ record.session.trainer.name }}</li>
+                                                    <li><strong>培训时长：</strong>{{ record.course.duration }} 小时</li>
+                                                    <li><strong>培训地点：</strong>{{ record.session.location }}</li>
+                                                </ul>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <h6>时间信息</h6>
+                                                <ul class="list-unstyled">
+                                                    <li><strong>开始时间：</strong>{{ record.session.start_date.strftime('%Y-%m-%d %H:%M') }}</li>
+                                                    <li><strong>结束时间：</strong>{{ record.session.end_date.strftime('%Y-%m-%d %H:%M') }}</li>
+                                                    <li><strong>完成时间：</strong>{{ record.completion_date.strftime('%Y-%m-%d %H:%M') if record.completion_date }}</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                        
+                                        {% if record.feedback %}
+                                        <div class="mt-4">
+                                            <h6>培训反馈</h6>
+                                            <div class="card">
+                                                <div class="card-body">
+                                                    <div class="mb-3">
+                                                        <strong>评分：</strong>
+                                                        {% for i in range(5) %}
+                                                        <i class="bi bi-star-fill text-warning"></i>
+                                                        {% endfor %}
+                                                        ({{ record.feedback.rating }}/5)
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <strong>评价：</strong>
+                                                        <p>{{ record.feedback.comment }}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="modal-footer">
+                                        {% if not record.feedback and record.status == '已完成' %}
+                                        <button type="button" class="btn btn-primary" onclick="showFeedbackForm({{ record.id }})">
+                                            提交反馈
+                                        </button>
+                                        {% endif %}
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 分页 -->
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#" tabindex="-1">上一页</a>
+                    </li>
+                    <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                    <li class="page-item"><a class="page-link" href="#">2</a></li>
+                    <li class="page-item"><a class="page-link" href="#">3</a></li>
+                    <li class="page-item">
+                        <a class="page-link" href="#">下一页</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<!-- 反馈表单模态框 -->
+<div class="modal fade" id="feedbackModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">提交培训反馈</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="feedbackForm" method="POST">
+                    <input type="hidden" id="record_id" name="record_id">
+                    <div class="mb-3">
+                        <label class="form-label">评分</label>
+                        <div class="rating">
+                            {% for i in range(5) %}
+                            <input type="radio" name="rating" value="{{ i + 1 }}" id="star{{ i + 1 }}" required>
+                            <label for="star{{ i + 1 }}"><i class="bi bi-star"></i></label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="comment" class="form-label">评价</label>
+                        <textarea class="form-control" id="comment" name="comment" rows="3" required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="submit" form="feedbackForm" class="btn btn-primary">提交</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 显示反馈表单
+function showFeedbackForm(recordId) {
+    document.getElementById('record_id').value = recordId;
+    var feedbackModal = new bootstrap.Modal(document.getElementById('feedbackModal'));
+    feedbackModal.show();
+}
+
+// 星级评分交互
+document.querySelectorAll('.rating input').forEach(input => {
+    input.addEventListener('change', function() {
+        document.querySelectorAll('.rating label i').forEach((star, index) => {
+            if (index < this.value) {
+                star.classList.remove('bi-star');
+                star.classList.add('bi-star-fill');
+            } else {
+                star.classList.remove('bi-star-fill');
+                star.classList.add('bi-star');
+            }
+        });
+    });
+});
+
+// 提交反馈
+document.getElementById('feedbackForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    // 实现提交反馈的逻辑
+});
+
+// 导出记录
+document.querySelector('a[href*="export_data"]').addEventListener('click', function(e) {
+    e.preventDefault();
+    // 实现导出记录的逻辑
+});
+</script>
+{% endblock %}

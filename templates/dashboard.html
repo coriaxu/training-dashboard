@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}仪表盘 - 培训管理系统{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- 欢迎信息和统计卡片 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3 mb-4">欢迎回来，{{ current_user.username }}</h1>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                已完成培训</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ records|length }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-check-circle-fill fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                培训总时长</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ training_hours }} 小时</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-clock-fill fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 即将开始的培训 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">即将开始的培训</h6>
+                </div>
+                <div class="card-body">
+                    {% if upcoming_sessions %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>培训课程</th>
+                                    <th>开始时间</th>
+                                    <th>结束时间</th>
+                                    <th>讲师</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for session in upcoming_sessions %}
+                                <tr>
+                                    <td>{{ session.course.name }}</td>
+                                    <td>{{ session.start_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    <td>{{ session.end_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    <td>{{ session.trainer.name }}</td>
+                                    <td>
+                                        <a href="{{ url_for('session_detail', session_id=session.id) }}" class="btn btn-primary btn-sm">
+                                            查看详情
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-center">暂无即将开始的培训</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 最近的培训记录 -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">最近的培训记录</h6>
+                </div>
+                <div class="card-body">
+                    {% if records %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>培训课程</th>
+                                    <th>完成时间</th>
+                                    <th>状态</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in records %}
+                                <tr>
+                                    <td>{{ record.course.name }}</td>
+                                    <td>{{ record.completion_date.strftime('%Y-%m-%d %H:%M') if record.completion_date }}</td>
+                                    <td>
+                                        <span class="badge {% if record.status == '已完成' %}bg-success{% else %}bg-warning{% endif %}">
+                                            {{ record.status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="#" class="btn btn-info btn-sm">查看详情</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-center">暂无培训记录</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

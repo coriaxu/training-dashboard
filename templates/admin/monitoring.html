@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+
+{% block title %}系统监控 - 培训管理系统{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="h3 mb-4">系统监控</h1>
+
+    <!-- 系统资源 -->
+    <div class="row">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                CPU 使用率</div>
+                            <div class="row no-gutters align-items-center">
+                                <div class="col-auto">
+                                    <div class="h5 mb-0 mr-3 font-weight-bold text-gray-800" id="cpu-usage">0%</div>
+                                </div>
+                                <div class="col">
+                                    <div class="progress progress-sm mr-2">
+                                        <div class="progress-bar bg-primary" role="progressbar" id="cpu-progress"
+                                            style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-cpu fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                内存使用率</div>
+                            <div class="row no-gutters align-items-center">
+                                <div class="col-auto">
+                                    <div class="h5 mb-0 mr-3 font-weight-bold text-gray-800" id="memory-usage">0%</div>
+                                </div>
+                                <div class="col">
+                                    <div class="progress progress-sm mr-2">
+                                        <div class="progress-bar bg-success" role="progressbar" id="memory-progress"
+                                            style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-memory fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                磁盘使用率</div>
+                            <div class="row no-gutters align-items-center">
+                                <div class="col-auto">
+                                    <div class="h5 mb-0 mr-3 font-weight-bold text-gray-800" id="disk-usage">0%</div>
+                                </div>
+                                <div class="col">
+                                    <div class="progress progress-sm mr-2">
+                                        <div class="progress-bar bg-info" role="progressbar" id="disk-progress"
+                                            style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-hdd fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                进程线程数</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="thread-count">0</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-diagram-2 fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 系统信息和进程信息 -->
+    <div class="row">
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">系统信息</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <tbody>
+                                <tr>
+                                    <th>操作系统</th>
+                                    <td id="os-info">-</td>
+                                </tr>
+                                <tr>
+                                    <th>Python版本</th>
+                                    <td id="python-version">-</td>
+                                </tr>
+                                <tr>
+                                    <th>CPU核心数</th>
+                                    <td id="cpu-count">-</td>
+                                </tr>
+                                <tr>
+                                    <th>总内存</th>
+                                    <td id="total-memory">-</td>
+                                </tr>
+                                <tr>
+                                    <th>总磁盘空间</th>
+                                    <td id="total-disk">-</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">应用统计</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <tbody>
+                                <tr>
+                                    <th>总用户数</th>
+                                    <td id="total-users">-</td>
+                                </tr>
+                                <tr>
+                                    <th>本月培训数</th>
+                                    <td id="monthly-trainings">-</td>
+                                </tr>
+                                <tr>
+                                    <th>完成培训数</th>
+                                    <td id="completed-trainings">-</td>
+                                </tr>
+                                <tr>
+                                    <th>平均评分</th>
+                                    <td id="average-rating">-</td>
+                                </tr>
+                                <tr>
+                                    <th>今日错误数</th>
+                                    <td id="daily-errors">-</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 数据库统计 -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">数据库统计</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>表名</th>
+                            <th>记录数</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-stats">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function formatBytes(bytes, decimals = 2) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+}
+
+function updateMonitoringData() {
+    fetch('/api/monitoring/data')
+        .then(response => response.json())
+        .then(data => {
+            // 更新系统资源使用率
+            const resources = data.system.resources;
+            document.getElementById('cpu-usage').textContent = resources.cpu_percent + '%';
+            document.getElementById('cpu-progress').style.width = resources.cpu_percent + '%';
+            
+            document.getElementById('memory-usage').textContent = resources.memory_percent + '%';
+            document.getElementById('memory-progress').style.width = resources.memory_percent + '%';
+            
+            document.getElementById('disk-usage').textContent = resources.disk_percent + '%';
+            document.getElementById('disk-progress').style.width = resources.disk_percent + '%';
+            
+            document.getElementById('thread-count').textContent = data.system.process.threads;
+            
+            // 更新系统信息
+            const info = data.system.info;
+            document.getElementById('os-info').textContent = `${info.os} ${info.os_version}`;
+            document.getElementById('python-version').textContent = info.python_version;
+            document.getElementById('cpu-count').textContent = info.cpu_count;
+            document.getElementById('total-memory').textContent = formatBytes(info.memory_total);
+            document.getElementById('total-disk').textContent = formatBytes(info.disk_total);
+            
+            // 更新应用统计
+            const app = data.application;
+            document.getElementById('total-users').textContent = app.users.total_users;
+            document.getElementById('monthly-trainings').textContent = app.training.monthly_sessions;
+            document.getElementById('completed-trainings').textContent = app.training.completed_records;
+            document.getElementById('average-rating').textContent = app.training.average_rating;
+            document.getElementById('daily-errors').textContent = app.errors.daily_errors;
+            
+            // 更新数据库统计
+            const tableStats = document.getElementById('table-stats');
+            tableStats.innerHTML = '';
+            for (const [table, stats] of Object.entries(data.database.tables)) {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${table}</td>
+                    <td>${stats.total_rows}</td>
+                `;
+                tableStats.appendChild(row);
+            }
+        });
+}
+
+// 页面加载时更新数据
+updateMonitoringData();
+
+// 每30秒更新一次数据
+setInterval(updateMonitoringData, 30000);
+</script>
+{% endblock %}

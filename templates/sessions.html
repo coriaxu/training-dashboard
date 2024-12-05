@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+
+{% block title %}培训安排 - 培训管理系统{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.css" rel="stylesheet">
+<style>
+.fc-event {
+    cursor: pointer;
+}
+.session-status {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+.status-upcoming {
+    background-color: #ffc107;
+}
+.status-in-progress {
+    background-color: #28a745;
+}
+.status-completed {
+    background-color: #6c757d;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3">培训安排</h1>
+        {% if 'admin' in current_user.roles|map(attribute='name') %}
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newSessionModal">
+            <i class="bi bi-plus"></i> 新增培训
+        </button>
+        {% endif %}
+    </div>
+
+    <div class="row">
+        <!-- 日历视图 -->
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-body">
+                    <div id="calendar"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 培训列表 -->
+        <div class="col-lg-4">
+            <div class="card shadow">
+                <div class="card-header">
+                    <ul class="nav nav-tabs card-header-tabs">
+                        <li class="nav-item">
+                            <a class="nav-link active" data-bs-toggle="tab" href="#upcoming">即将开始</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#in-progress">进行中</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#completed">已完成</a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-body">
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="upcoming">
+                            {% for session in sessions if not session.is_completed %}
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h5 class="card-title">{{ session.course.name }}</h5>
+                                            <h6 class="card-subtitle mb-2 text-muted">{{ session.trainer.name }}</h6>
+                                        </div>
+                                        <span class="session-status status-upcoming"></span>
+                                    </div>
+                                    <p class="card-text">
+                                        <small class="text-muted">
+                                            <i class="bi bi-calendar"></i> {{ session.start_date.strftime('%Y-%m-%d %H:%M') }}
+                                        </small>
+                                    </p>
+                                    <a href="{{ url_for('session_detail', session_id=session.id) }}" class="btn btn-primary btn-sm">
+                                        查看详情
+                                    </a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="tab-pane fade" id="in-progress">
+                            {% for session in sessions if session.is_in_progress %}
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h5 class="card-title">{{ session.course.name }}</h5>
+                                            <h6 class="card-subtitle mb-2 text-muted">{{ session.trainer.name }}</h6>
+                                        </div>
+                                        <span class="session-status status-in-progress"></span>
+                                    </div>
+                                    <p class="card-text">
+                                        <small class="text-muted">
+                                            <i class="bi bi-calendar"></i> {{ session.start_date.strftime('%Y-%m-%d %H:%M') }}
+                                        </small>
+                                    </p>
+                                    <a href="{{ url_for('session_detail', session_id=session.id) }}" class="btn btn-primary btn-sm">
+                                        查看详情
+                                    </a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="tab-pane fade" id="completed">
+                            {% for session in sessions if session.is_completed %}
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h5 class="card-title">{{ session.course.name }}</h5>
+                                            <h6 class="card-subtitle mb-2 text-muted">{{ session.trainer.name }}</h6>
+                                        </div>
+                                        <span class="session-status status-completed"></span>
+                                    </div>
+                                    <p class="card-text">
+                                        <small class="text-muted">
+                                            <i class="bi bi-calendar"></i> {{ session.start_date.strftime('%Y-%m-%d %H:%M') }}
+                                        </small>
+                                    </p>
+                                    <a href="{{ url_for('session_detail', session_id=session.id) }}" class="btn btn-primary btn-sm">
+                                        查看详情
+                                    </a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 新增培训模态框 -->
+<div class="modal fade" id="newSessionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">新增培训</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="newSessionForm" method="POST" action="{{ url_for('new_session') }}">
+                    <div class="mb-3">
+                        <label for="course_id" class="form-label">培训课程</label>
+                        <select class="form-select" id="course_id" name="course_id" required>
+                            {% for course in courses %}
+                            <option value="{{ course.id }}">{{ course.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="trainer_id" class="form-label">培训讲师</label>
+                        <select class="form-select" id="trainer_id" name="trainer_id" required>
+                            {% for trainer in trainers %}
+                            <option value="{{ trainer.id }}">{{ trainer.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="start_date" class="form-label">开始时间</label>
+                        <input type="datetime-local" class="form-control" id="start_date" name="start_date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="end_date" class="form-label">结束时间</label>
+                        <input type="datetime-local" class="form-control" id="end_date" name="end_date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="location" class="form-label">培训地点</label>
+                        <input type="text" class="form-control" id="location" name="location" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="max_participants" class="form-label">最大参与人数</label>
+                        <input type="number" class="form-control" id="max_participants" name="max_participants" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">培训说明</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="submit" form="newSessionForm" class="btn btn-primary">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/locales/zh-cn.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var calendarEl = document.getElementById('calendar');
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        locale: 'zh-cn',
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,timeGridDay'
+        },
+        events: [
+            {% for session in sessions %}
+            {
+                title: '{{ session.course.name }}',
+                start: '{{ session.start_date.isoformat() }}',
+                end: '{{ session.end_date.isoformat() }}',
+                url: '{{ url_for("session_detail", session_id=session.id) }}',
+                backgroundColor: '{{ "#ffc107" if not session.is_completed else "#6c757d" }}'
+            },
+            {% endfor %}
+        ],
+        eventClick: function(info) {
+            if (info.event.url) {
+                window.location.href = info.event.url;
+                info.jsEvent.preventDefault();
+            }
+        }
+    });
+    calendar.render();
+});
+
+// 表单验证
+document.getElementById('newSessionForm').addEventListener('submit', function(e) {
+    var startDate = new Date(document.getElementById('start_date').value);
+    var endDate = new Date(document.getElementById('end_date').value);
+    
+    if (startDate >= endDate) {
+        e.preventDefault();
+        alert('结束时间必须晚于开始时间');
+    }
+});
+
+// 自动设置结束时间
+document.getElementById('course_id').addEventListener('change', function() {
+    var courseId = this.value;
+    // 这里可以通过 AJAX 获取课程时长，自动计算结束时间
+});
+</script>
+{% endblock %}

@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+
+{% block title %}数据分析 - 培训管理系统{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="h3 mb-4">数据分析</h1>
+
+    <!-- 统计卡片 -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                培训完成率</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ "%.1f"|format(completion_rate) }}%</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-check-circle-fill fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                总培训时长</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ training_hours }} 小时</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-clock-fill fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                平均培训评分</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">4.5</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-star-fill fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                培训课程数</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">25</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-book-fill fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- 培训完成趋势图 -->
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">培训完成趋势</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-area">
+                        <canvas id="completionTrendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 培训分类分布 -->
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">培训分类分布</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-pie">
+                        <canvas id="trainingCategoryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- 讲师评分排名 -->
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">讲师评分排名</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-bar">
+                        <canvas id="trainerRatingChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 部门培训统计 -->
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">部门培训统计</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-bar">
+                        <canvas id="departmentTrainingChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 详细数据表格 -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">培训数据详情</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>培训类别</th>
+                            <th>完成人数</th>
+                            <th>平均评分</th>
+                            <th>总时长</th>
+                            <th>完成率</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>技术培训</td>
+                            <td>150</td>
+                            <td>4.5</td>
+                            <td>450小时</td>
+                            <td>85%</td>
+                        </tr>
+                        <tr>
+                            <td>管理培训</td>
+                            <td>80</td>
+                            <td>4.3</td>
+                            <td>240小时</td>
+                            <td>78%</td>
+                        </tr>
+                        <tr>
+                            <td>软技能培训</td>
+                            <td>120</td>
+                            <td>4.7</td>
+                            <td>360小时</td>
+                            <td>92%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 培训完成趋势图
+var completionTrendCtx = document.getElementById('completionTrendChart').getContext('2d');
+var completionTrendChart = new Chart(completionTrendCtx, {
+    type: 'line',
+    data: {
+        labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
+        datasets: [{
+            label: '完成人数',
+            data: [65, 78, 90, 85, 95, 110],
+            borderColor: 'rgb(78, 115, 223)',
+            tension: 0.3,
+            fill: false
+        }]
+    },
+    options: {
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// 培训分类分布图
+var categoryCtx = document.getElementById('trainingCategoryChart').getContext('2d');
+var categoryChart = new Chart(categoryCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['技术培训', '管理培训', '软技能培训'],
+        datasets: [{
+            data: [45, 30, 25],
+            backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc']
+        }]
+    },
+    options: {
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+// 讲师评分排名图
+var trainerCtx = document.getElementById('trainerRatingChart').getContext('2d');
+var trainerChart = new Chart(trainerCtx, {
+    type: 'bar',
+    data: {
+        labels: ['张老师', '李老师', '王老师', '赵老师', '钱老师'],
+        datasets: [{
+            label: '平均评分',
+            data: [4.8, 4.6, 4.5, 4.3, 4.2],
+            backgroundColor: '#4e73df'
+        }]
+    },
+    options: {
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 5
+            }
+        }
+    }
+});
+
+// 部门培训统计图
+var departmentCtx = document.getElementById('departmentTrainingChart').getContext('2d');
+var departmentChart = new Chart(departmentCtx, {
+    type: 'bar',
+    data: {
+        labels: ['技术部', '市场部', '人事部', '财务部', '运营部'],
+        datasets: [{
+            label: '培训完成率',
+            data: [95, 88, 85, 82, 78],
+            backgroundColor: '#1cc88a'
+        }]
+    },
+    options: {
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 100
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

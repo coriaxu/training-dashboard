@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}培训讲师 - 培训管理系统{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3">培训讲师</h1>
+        {% if 'admin' in current_user.roles|map(attribute='name') %}
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newTrainerModal">
+            <i class="bi bi-plus"></i> 新增讲师
+        </button>
+        {% endif %}
+    </div>
+
+    <!-- 讲师列表 -->
+    <div class="row">
+        {% for trainer in trainers %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="flex-shrink-0">
+                            <img src="{{ trainer.avatar_url or url_for('static', filename='images/default-avatar.png') }}" 
+                                 class="rounded-circle" alt="{{ trainer.name }}" 
+                                 style="width: 64px; height: 64px; object-fit: cover;">
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h5 class="card-title mb-0">{{ trainer.name }}</h5>
+                            <p class="card-text text-muted">{{ trainer.title }}</p>
+                        </div>
+                    </div>
+                    <p class="card-text">{{ trainer.description }}</p>
+                    <div class="mb-3">
+                        <h6>专业领域：</h6>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for expertise in trainer.expertise.split(',') %}
+                            <span class="badge bg-primary">{{ expertise }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <h6>联系方式：</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="bi bi-envelope"></i> {{ trainer.email }}</li>
+                            <li><i class="bi bi-telephone"></i> {{ trainer.phone }}</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('trainer_detail', trainer_id=trainer.id) }}" class="btn btn-primary btn-sm">
+                        查看详情
+                    </a>
+                    {% if 'admin' in current_user.roles|map(attribute='name') %}
+                    <button class="btn btn-warning btn-sm" onclick="editTrainer({{ trainer.id }})">
+                        编辑
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteTrainer({{ trainer.id }})">
+                        删除
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- 新增讲师模态框 -->
+<div class="modal fade" id="newTrainerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">新增讲师</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="newTrainerForm" method="POST" action="{{ url_for('new_trainer') }}" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="avatar" class="form-label">头像</label>
+                        <input type="file" class="form-control" id="avatar" name="avatar" accept="image/*">
+                    </div>
+                    <div class="mb-3">
+                        <label for="name" class="form-label">姓名</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="title" class="form-label">职称</label>
+                        <input type="text" class="form-control" id="title" name="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">简介</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="expertise" class="form-label">专业领域（用逗号分隔）</label>
+                        <input type="text" class="form-control" id="expertise" name="expertise" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">邮箱</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="phone" class="form-label">电话</label>
+                        <input type="tel" class="form-control" id="phone" name="phone">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="submit" form="newTrainerForm" class="btn btn-primary">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function editTrainer(trainerId) {
+    // 实现编辑讲师的逻辑
+}
+
+function deleteTrainer(trainerId) {
+    if (confirm('确定要删除这位讲师吗？')) {
+        // 实现删除讲师的逻辑
+    }
+}
+
+// 预览头像
+document.getElementById('avatar').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        if (file.size > 5 * 1024 * 1024) { // 5MB
+            alert('图片大小不能超过5MB');
+            this.value = '';
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            // 可以在这里添加预览图片的逻辑
+        };
+        reader.readAsDataURL(file);
+    }
+});
+</script>
+{% endblock %}
