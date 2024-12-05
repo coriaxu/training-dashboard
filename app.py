@@ -52,6 +52,10 @@ translations = {
             'total_training_hours': "总培训时长",
             'total_training_person_hours': "总培训人时",
         },
+        'data_input': {
+            'data_2023': "2023年数据",
+            'data_2024': "2024年数据",
+        }
     },
     'en': {
         'title': "Surfin 2024 Training Data Dashboard",
@@ -76,6 +80,10 @@ translations = {
             'total_training_hours': "Total Training Hours",
             'total_training_person_hours': "Total Training Person-Hours",
         },
+        'data_input': {
+            'data_2023': "Data for 2023",
+            'data_2024': "Data for 2024",
+        }
     }
 }
 
@@ -389,49 +397,8 @@ def serve_layout():
                 className="text-center",
                 style={'marginBottom': '2rem'}),
         
-        # 手动输入组件
-        html.Div([
-            dbc.Row([
-                dbc.Col([
-                    dbc.Label("2023年数据", style={'fontWeight': 'bold'}),
-                    dbc.InputGroup([
-                        dbc.InputGroupText("总课程数"),
-                        dbc.Input(id='input-2023-total_courses', type='number', value=data_2023['total_courses']),
-                    ], className='mb-2'),
-                    dbc.InputGroup([
-                        dbc.InputGroupText("总参训人次"),
-                        dbc.Input(id='input-2023-total_participants', type='number', value=data_2023['total_participants']),
-                    ], className='mb-2'),
-                    dbc.InputGroup([
-                        dbc.InputGroupText("总培训时长"),
-                        dbc.Input(id='input-2023-total_training_hours', type='number', value=data_2023['total_training_hours']),
-                    ], className='mb-2'),
-                    dbc.InputGroup([
-                        dbc.InputGroupText("总培训人时"),
-                        dbc.Input(id='input-2023-total_training_person_hours', type='number', value=data_2023['total_training_person_hours']),
-                    ], className='mb-2'),
-                ], width=6),
-                dbc.Col([
-                    dbc.Label("2024年数据", style={'fontWeight': 'bold'}),
-                    dbc.InputGroup([
-                        dbc.InputGroupText("总课程数"),
-                        dbc.Input(id='input-2024-total_courses', type='number', value=data_2024['total_courses']),
-                    ], className='mb-2'),
-                    dbc.InputGroup([
-                        dbc.InputGroupText("总参训人次"),
-                        dbc.Input(id='input-2024-total_participants', type='number', value=data_2024['total_participants']),
-                    ], className='mb-2'),
-                    dbc.InputGroup([
-                        dbc.InputGroupText("总培训时长"),
-                        dbc.Input(id='input-2024-total_training_hours', type='number', value=data_2024['total_training_hours']),
-                    ], className='mb-2'),
-                    dbc.InputGroup([
-                        dbc.InputGroupText("总培训人时"),
-                        dbc.Input(id='input-2024-total_training_person_hours', type='number', value=data_2024['total_training_person_hours']),
-                    ], className='mb-2'),
-                ], width=6),
-            ], className='mb-4'),
-        ]),
+        # 手动输入组件容器（内容将在回调中更新）
+        html.Div(id='input-container'),
         
         # 下载按钮
         html.Div([
@@ -469,6 +436,7 @@ app.layout = serve_layout
     Output('language-button', 'children'),
     Output('cards-container', 'children'),
     Output('charts-container', 'children'),
+    Output('input-container', 'children'),
     Input('language-store', 'data'),
     Input('data-2023-store', 'data'),
     Input('data-2024-store', 'data'),
@@ -483,9 +451,37 @@ def update_content(lang, data_2023_store, data_2024_store):
     translations_lang = translations[lang]
     metrics = translations_lang['metrics']
     units = translations_lang['units']
+    metric_labels = translations_lang['metric_labels']
     
     # 更新按钮文字
     language_button_text = 'EN' if lang == 'zh' else '中文'
+    
+    # 创建手动输入组件
+    data_input_labels = translations_lang['data_input']
+    input_components = html.Div([
+        dbc.Row([
+            dbc.Col([
+                dbc.Label(data_input_labels['data_2023'], style={'fontWeight': 'bold'}),
+                *[
+                    dbc.InputGroup([
+                        dbc.InputGroupText(metric_labels[metric]),
+                        dbc.Input(id=f'input-2023-{metric}', type='number', value=data_2023[metric]),
+                    ], className='mb-2')
+                    for metric in metrics
+                ],
+            ], width=6),
+            dbc.Col([
+                dbc.Label(data_input_labels['data_2024'], style={'fontWeight': 'bold'}),
+                *[
+                    dbc.InputGroup([
+                        dbc.InputGroupText(metric_labels[metric]),
+                        dbc.Input(id=f'input-2024-{metric}', type='number', value=data_2024[metric]),
+                    ], className='mb-2')
+                    for metric in metrics
+                ],
+            ], width=6),
+        ], className='mb-4'),
+    ])
     
     # 创建指标卡片
     cards = [
@@ -518,7 +514,8 @@ def update_content(lang, data_2023_store, data_2024_store):
             translations_lang['detailed_comparison'],
             language_button_text,
             cards,
-            charts)
+            charts,
+            input_components)
 
 # 切换语言的回调函数
 @app.callback(
