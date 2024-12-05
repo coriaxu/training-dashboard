@@ -30,19 +30,25 @@ COLORS = {
 # 语言字典
 translations = {
     'zh': {
-        'title': "Surfin2024年学习发展工作培训数据看板",
+        'title': "Surfin 2024年学习发展工作培训数据看板",
         'download_pdf': "下载PDF报告",
         'key_metrics': "年度关键指标对比",
         'detailed_comparison': "年度指标详细对比",
-        'analysis_title': "培训数据详细分析",
+        'analysis_title': "培训数据深度分析报告",
         'analysis_content': (
-            "相比去年，{year_2024}的总课程数{course_change}，"
-            "总参训人次{participants_change}，总培训时长{hours_change}，"
-            "总培训人时{person_hours_change}。"
+            "基于当前的培训数据分析，我们观察到以下趋势：\n\n"
+            "- **总课程数**：{course_trend}\n"
+            "- **总参训人次**：{participants_trend}\n"
+            "- **总培训时长**：{hours_trend}\n"
+            "- **总培训人时**：{person_hours_trend}\n\n"
+            "这些变化可能是由于{possible_causes}。\n\n"
+            "为了进一步提升培训效果，我们建议{recommendations}。"
         ),
-        'increase': "增加了{value:.1f}%",
-        'decrease': "减少了{value:.1f}%",
-        'no_change': "与去年持平",
+        'trend_increase': "相比去年增长了{value:.1f}%，表明培训课程的数量有所增加",
+        'trend_decrease': "相比去年减少了{value:.1f}%，需要关注培训课程的数量下降趋势",
+        'trend_no_change': "与去年持平，培训课程数量保持稳定",
+        'possible_causes': "业务需求的变化、员工发展计划的调整或培训资源的重新分配",
+        'recommendations': "深入分析培训需求，优化培训课程设计，加强培训资源的投入",
         'total_courses': "总课程数",
         'total_participants': "总参训人次",
         'total_training_hours': "总培训时长",
@@ -71,15 +77,21 @@ translations = {
         'download_pdf': "Download PDF Report",
         'key_metrics': "Annual Key Metrics Comparison",
         'detailed_comparison': "Detailed Annual Metrics Comparison",
-        'analysis_title': "Detailed Analysis of Training Data",
+        'analysis_title': "In-depth Training Data Analysis Report",
         'analysis_content': (
-            "Compared to last year, in {year_2024}, the total courses {course_change}, "
-            "total participants {participants_change}, total training hours {hours_change}, "
-            "and total training person-hours {person_hours_change}."
+            "Based on the current training data analysis, we have observed the following trends:\n\n"
+            "- **Total Courses**: {course_trend}\n"
+            "- **Total Participants**: {participants_trend}\n"
+            "- **Total Training Hours**: {hours_trend}\n"
+            "- **Total Training Person-Hours**: {person_hours_trend}\n\n"
+            "These changes may be due to {possible_causes}.\n\n"
+            "To further enhance training effectiveness, we recommend {recommendations}."
         ),
-        'increase': "increased by {value:.1f}%",
-        'decrease': "decreased by {value:.1f}%",
-        'no_change': "remained the same as last year",
+        'trend_increase': "increased by {value:.1f}% compared to last year, indicating a rise in the number of training courses",
+        'trend_decrease': "decreased by {value:.1f}% compared to last year, requiring attention to the downward trend in training courses",
+        'trend_no_change': "remained the same as last year, maintaining a stable number of training courses",
+        'possible_causes': "changes in business needs, adjustments in employee development plans, or reallocation of training resources",
+        'recommendations': "conducting in-depth training needs analysis, optimizing training course design, and enhancing investment in training resources",
         'total_courses': "Total Courses",
         'total_participants': "Total Participants",
         'total_training_hours': "Total Training Hours",
@@ -447,10 +459,12 @@ def serve_layout():
         # 分析内容
         html.Div(id='analysis-content', style={
             'background-color': COLORS['card_bg'],
-            'padding': '1rem',
+            'padding': '2rem',
             'border-radius': '1rem',
             'margin-bottom': '2rem',
-            'color': COLORS['text']
+            'color': COLORS['text'],
+            'box-shadow': '0 4px 6px rgba(44, 62, 80, 0.05)',
+            'border': f"1px solid {COLORS['border']}",
         }),
         
     ], fluid=True)
@@ -463,32 +477,49 @@ def generate_analysis(lang):
     year_2023 = translations_lang['year_2023']
     year_2024 = translations_lang['year_2024']
     analysis_template = translations_lang['analysis_content']
-    increase_text = translations_lang['increase']
-    decrease_text = translations_lang['decrease']
-    no_change_text = translations_lang['no_change']
+    trend_increase = translations_lang['trend_increase']
+    trend_decrease = translations_lang['trend_decrease']
+    trend_no_change = translations_lang['trend_no_change']
+    possible_causes = translations_lang['possible_causes']
+    recommendations = translations_lang['recommendations']
     metrics = translations_lang['metrics']
     metric_labels = translations_lang['metric_labels']
     
-    changes = {}
+    trends = {}
     for metric in metrics:
         growth = growth_data[metric]
         if growth > 0:
-            change_text = increase_text.format(value=abs(growth))
+            trend_text = trend_increase.format(value=abs(growth))
         elif growth < 0:
-            change_text = decrease_text.format(value=abs(growth))
+            trend_text = trend_decrease.format(value=abs(growth))
         else:
-            change_text = no_change_text
-        changes[metric + '_change'] = change_text
+            trend_text = trend_no_change
+        trends[metric + '_trend'] = trend_text
     
     analysis_text = analysis_template.format(
-        year_2024=year_2024,
-        course_change=changes['total_courses_change'],
-        participants_change=changes['total_participants_change'],
-        hours_change=changes['total_training_hours_change'],
-        person_hours_change=changes['total_training_person_hours_change'],
+        course_trend=trends['total_courses_trend'],
+        participants_trend=trends['total_participants_trend'],
+        hours_trend=trends['total_training_hours_trend'],
+        person_hours_trend=trends['total_training_person_hours_trend'],
+        possible_causes=possible_causes,
+        recommendations=recommendations
     )
     
-    return html.P(analysis_text, style={'whiteSpace': 'pre-line', 'fontSize': '1rem'})
+    # 使用卡片式布局和图标
+    analysis_card = dbc.Card(
+        dbc.CardBody([
+            html.P(analysis_text, style={'whiteSpace': 'pre-line', 'fontSize': '1rem'}),
+        ]),
+        style={
+            'background-color': COLORS['card_bg'],
+            'border': f"1px solid {COLORS['border']}",
+            'border-radius': '1rem',
+            'box-shadow': '0 4px 6px rgba(44, 62, 80, 0.05)',
+            'color': COLORS['text'],
+        }
+    )
+    
+    return analysis_card
 
 # 更新页面内容的回调函数
 @app.callback(
@@ -727,8 +758,9 @@ def generate_pdf(n_clicks, lang, data_2023_store, data_2024_store):
         y -= 20
         p.setFont("STSong-Light", 12)
         analysis_content = generate_analysis(lang)
-        text = analysis_content.children
-        text_lines = text.split('\n')
+        # 获取分析文本
+        analysis_text = analysis_content.children[0].children
+        text_lines = analysis_text.split('\n')
         for line in text_lines:
             p.drawString(60, y, line)
             y -= 15
