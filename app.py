@@ -521,4 +521,4 @@ for metric in ['总课程数', '总参训人次', '总培训时长', '总培训�
         return create_chart_data(metric, units[metric], chart_type)
 
 if __name__ == '__main__':
-    app.run_server(host='localhost', port=8050, debug=True)
+    app.run_server(host='0.0.0.0', port=8050)
