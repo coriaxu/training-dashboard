@@ -34,6 +34,15 @@ translations = {
         'download_pdf': "下载PDF报告",
         'key_metrics': "年度关键指标对比",
         'detailed_comparison': "年度指标详细对比",
+        'analysis_title': "培训数据详细分析",
+        'analysis_content': (
+            "相比去年，{year_2024}的总课程数{course_change}，"
+            "总参训人次{participants_change}，总培训时长{hours_change}，"
+            "总培训人时{person_hours_change}。"
+        ),
+        'increase': "增加了{value:.1f}%",
+        'decrease': "减少了{value:.1f}%",
+        'no_change': "与去年持平",
         'total_courses': "总课程数",
         'total_participants': "总参训人次",
         'total_training_hours': "总培训时长",
@@ -62,6 +71,15 @@ translations = {
         'download_pdf': "Download PDF Report",
         'key_metrics': "Annual Key Metrics Comparison",
         'detailed_comparison': "Detailed Annual Metrics Comparison",
+        'analysis_title': "Detailed Analysis of Training Data",
+        'analysis_content': (
+            "Compared to last year, in {year_2024}, the total courses {course_change}, "
+            "total participants {participants_change}, total training hours {hours_change}, "
+            "and total training person-hours {person_hours_change}."
+        ),
+        'increase': "increased by {value:.1f}%",
+        'decrease': "decreased by {value:.1f}%",
+        'no_change': "remained the same as last year",
         'total_courses': "Total Courses",
         'total_participants': "Total Participants",
         'total_training_hours': "Total Training Hours",
@@ -423,9 +441,54 @@ def serve_layout():
         # 图表
         dbc.Row(id='charts-container', className="g-4"),
         
+        # 分析标题
+        html.H4(id='analysis-title', className="mt-4"),
+        
+        # 分析内容
+        html.Div(id='analysis-content', style={
+            'background-color': COLORS['card_bg'],
+            'padding': '1rem',
+            'border-radius': '1rem',
+            'margin-bottom': '2rem',
+            'color': COLORS['text']
+        }),
+        
     ], fluid=True)
 
 app.layout = serve_layout
+
+# 生成分析内容
+def generate_analysis(lang):
+    translations_lang = translations[lang]
+    year_2023 = translations_lang['year_2023']
+    year_2024 = translations_lang['year_2024']
+    analysis_template = translations_lang['analysis_content']
+    increase_text = translations_lang['increase']
+    decrease_text = translations_lang['decrease']
+    no_change_text = translations_lang['no_change']
+    metrics = translations_lang['metrics']
+    metric_labels = translations_lang['metric_labels']
+    
+    changes = {}
+    for metric in metrics:
+        growth = growth_data[metric]
+        if growth > 0:
+            change_text = increase_text.format(value=abs(growth))
+        elif growth < 0:
+            change_text = decrease_text.format(value=abs(growth))
+        else:
+            change_text = no_change_text
+        changes[metric + '_change'] = change_text
+    
+    analysis_text = analysis_template.format(
+        year_2024=year_2024,
+        course_change=changes['total_courses_change'],
+        participants_change=changes['total_participants_change'],
+        hours_change=changes['total_training_hours_change'],
+        person_hours_change=changes['total_training_person_hours_change'],
+    )
+    
+    return html.P(analysis_text, style={'whiteSpace': 'pre-line', 'fontSize': '1rem'})
 
 # 更新页面内容的回调函数
 @app.callback(
@@ -437,6 +500,8 @@ app.layout = serve_layout
     Output('cards-container', 'children'),
     Output('charts-container', 'children'),
     Output('input-container', 'children'),
+    Output('analysis-title', 'children'),
+    Output('analysis-content', 'children'),
     Input('language-store', 'data'),
     Input('data-2023-store', 'data'),
     Input('data-2024-store', 'data'),
@@ -508,6 +573,10 @@ def update_content(lang, data_2023_store, data_2024_store):
     # 更新下载按钮文字
     download_button_text = translations_lang['download_pdf']
     
+    # 生成分析内容
+    analysis_title = translations_lang['analysis_title']
+    analysis_content = generate_analysis(lang)
+    
     return (translations_lang['title'],
             download_button_text,
             translations_lang['key_metrics'],
@@ -515,7 +584,9 @@ def update_content(lang, data_2023_store, data_2024_store):
             language_button_text,
             cards,
             charts,
-            input_components)
+            input_components,
+            analysis_title,
+            analysis_content)
 
 # 切换语言的回调函数
 @app.callback(
@@ -648,6 +719,23 @@ def generate_pdf(n_clicks, lang, data_2023_store, data_2024_store):
             growth_text = f"{'+' if value > 0 else ''}{value:.1f}%"
             p.drawString(60, y, f"{label}: {growth_text}")
             y -= 15
+        
+        # 绘制分析内容
+        y -= 20
+        p.setFont("STSong-Light", 14)
+        p.drawString(50, y, translations_lang['analysis_title'])
+        y -= 20
+        p.setFont("STSong-Light", 12)
+        analysis_content = generate_analysis(lang)
+        text = analysis_content.children
+        text_lines = text.split('\n')
+        for line in text_lines:
+            p.drawString(60, y, line)
+            y -= 15
+            if y < 100:
+                p.showPage()
+                y = 750
+                p.setFont("STSong-Light", 12)
         
         # 插入图表
         y -= 30  # 调整位置
