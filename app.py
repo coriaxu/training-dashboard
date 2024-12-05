@@ -1,7 +1,7 @@
 import dash
-from dash import html, dcc, Input, Output, callback
+from dash import html, dcc
 import dash_bootstrap_components as dbc
-import plotly.graph_objects as go
+import plotly.express as px
 import pandas as pd
 
 # 地中海风格配色方案
@@ -50,7 +50,9 @@ growth_data = {
 # 添加全局样式
 app = dash.Dash(__name__, 
                 external_stylesheets=[dbc.themes.BOOTSTRAP],
-                meta_tags=[{"name": "viewport", "content": "width=device-width, initial-scale=1"}])
+                meta_tags=[{"name": "viewport", "content": "width=device-width, initial-scale=1"}],
+                compress=True)  # 启用压缩
+server = app.server  # 添加这行，Vercel 需要它
 
 app.index_string = '''
 <!DOCTYPE html>
@@ -312,73 +314,7 @@ def create_year_comparison_charts():
     return [{'metric': metric, 'unit': unit} for metric, unit in zip(metrics, units)]
 
 def create_chart_data(metric, unit, chart_type='bar'):
-    fig = go.Figure()
-    
-    if chart_type == 'bar':
-        # 柱状图
-        fig.add_trace(go.Bar(
-            name='2023年',
-            x=[metric],
-            y=[data_2023[metric]],
-            marker_color=COLORS['chart_colors'][1],
-            hovertemplate=f"%{{y}}{unit}<extra></extra>",
-            marker=dict(opacity=0.9)
-        ))
-        fig.add_trace(go.Bar(
-            name='2024年',
-            x=[metric],
-            y=[data_2024[metric]],
-            marker_color=COLORS['chart_colors'][0],
-            hovertemplate=f"%{{y}}{unit}<extra></extra>",
-            marker=dict(opacity=0.9)
-        ))
-        fig.update_layout(barmode='group')
-        
-    elif chart_type == 'pie':
-        # 饼图
-        fig.add_trace(go.Pie(
-            values=[data_2023[metric], data_2024[metric]],
-            labels=['2023年', '2024年'],
-            hole=0.4,
-            marker_colors=[COLORS['chart_colors'][1], COLORS['chart_colors'][0]],
-            textinfo='label+percent',
-            hovertemplate="%{label}<br>%{value}" + unit + "<br>占比: %{percent}<extra></extra>",
-            textfont=dict(
-                family='-apple-system, BlinkMacSystemFont, "SF Pro Text"',
-                size=14,
-                color=COLORS['text']
-            ),
-        ))
-        
-    else:  # radar
-        # 雷达图
-        metrics = ['总课程数', '总参训人次', '总培训时长', '总培训人时']
-        max_values = {}
-        for m in metrics:
-            max_values[m] = max(data_2023[m], data_2024[m])
-        
-        normalized_2023 = data_2023[metric] / max_values[metric]
-        normalized_2024 = data_2024[metric] / max_values[metric]
-        
-        fig.add_trace(go.Scatterpolar(
-            r=[normalized_2023, normalized_2023],
-            theta=['2023年', '2024年'],
-            fill='toself',
-            name='2023年',
-            line_color=COLORS['chart_colors'][1],
-            fillcolor=f"rgba({int(COLORS['chart_colors'][1][1:3], 16)}, {int(COLORS['chart_colors'][1][3:5], 16)}, {int(COLORS['chart_colors'][1][5:7], 16)}, 0.2)",
-            hovertemplate=f"2023年<br>数值: {data_2023[metric]}{unit}<extra></extra>"
-        ))
-        
-        fig.add_trace(go.Scatterpolar(
-            r=[normalized_2024, normalized_2024],
-            theta=['2023年', '2024年'],
-            fill='toself',
-            name='2024年',
-            line_color=COLORS['chart_colors'][0],
-            fillcolor=f"rgba({int(COLORS['chart_colors'][0][1:3], 16)}, {int(COLORS['chart_colors'][0][3:5], 16)}, {int(COLORS['chart_colors'][0][5:7], 16)}, 0.2)",
-            hovertemplate=f"2024年<br>数值: {data_2024[metric]}{unit}<extra></extra>"
-        ))
+    fig = px.bar(x=[metric], y=[data_2023[metric], data_2024[metric]], color_discrete_sequence=[COLORS['chart_colors'][1], COLORS['chart_colors'][0]], barmode='group') if chart_type == 'bar' else px.pie(values=[data_2023[metric], data_2024[metric]], names=['2023年', '2024年'], color_discrete_sequence=[COLORS['chart_colors'][1], COLORS['chart_colors'][0]]) if chart_type == 'pie' else px.scatter_polar(r=[data_2023[metric], data_2024[metric]], theta=['2023年', '2024年'], color_discrete_sequence=[COLORS['chart_colors'][1], COLORS['chart_colors'][0]])
     
     # 通用布局设置
     fig.update_layout(
@@ -417,48 +353,6 @@ def create_chart_data(metric, unit, chart_type='bar'):
             font_family='-apple-system, BlinkMacSystemFont, "SF Pro Text"'
         ),
     )
-    
-    # 为柱状图添加特定的轴设置
-    if chart_type == 'bar':
-        fig.update_xaxes(
-            showgrid=False,
-            showline=True,
-            linecolor='rgba(0,0,0,0.1)',
-            tickfont=dict(
-                family='-apple-system, BlinkMacSystemFont, "SF Pro Text"',
-                size=12,
-                color=COLORS['text']
-            )
-        )
-        
-        fig.update_yaxes(
-            showgrid=True,
-            gridwidth=1,
-            gridcolor='rgba(0,0,0,0.05)',
-            tickfont=dict(
-                family='-apple-system, BlinkMacSystemFont, "SF Pro Text"',
-                size=12,
-                color=COLORS['text']
-            )
-        )
-    
-    # 为雷达图添加特定的极坐标设置
-    if chart_type == 'radar':
-        fig.update_layout(
-            polar=dict(
-                bgcolor='rgba(0,0,0,0)',
-                radialaxis=dict(
-                    visible=True,
-                    range=[0, 1],
-                    showticklabels=False,
-                    gridcolor='rgba(0,0,0,0.1)',
-                ),
-                angularaxis=dict(
-                    gridcolor='rgba(0,0,0,0.1)',
-                    linecolor='rgba(0,0,0,0.1)',
-                )
-            )
-        )
     
     return fig
 
@@ -512,13 +406,13 @@ app.layout = serve_layout
 
 # 回调函数：更新图表类型
 for metric in ['总课程数', '总参训人次', '总培训时长', '总培训人时']:
-    @callback(
-        Output(f'chart-{metric}', 'figure'),
-        Input(f'chart-type-{metric}', 'value')
+    @app.callback(
+        dash.dependencies.Output(f'chart-{metric}', 'figure'),
+        dash.dependencies.Input(f'chart-type-{metric}', 'value')
     )
     def update_chart(chart_type, metric=metric):
         units = {'总课程数': '门', '总参训人次': '人次', '总培训时长': '小时', '总培训人时': '小时'}
         return create_chart_data(metric, units[metric], chart_type)
 
 if __name__ == '__main__':
-    app.run_server(host='0.0.0.0', port=8050)
+    app.run_server(debug=False, host='0.0.0.0')
